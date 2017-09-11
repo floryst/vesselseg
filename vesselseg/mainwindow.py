@@ -1,10 +1,13 @@
 from PyQt4.QtGui import *
-from PyQt4.QtCore import Qt
+from PyQt4.QtCore import Qt, pyqtSignal
 
 from tabs import InfoTab, SegmentTab
 from vtkviewer import VTKViewer
 
 class MainWindow(QMainWindow):
+
+    # signal: file was selected for loading
+    fileSelected = pyqtSignal(str)
 
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
@@ -15,13 +18,23 @@ class MainWindow(QMainWindow):
         self.createMenus()
         self.createActions()
 
+        self.openAction.triggered.connect(self.openFileDialog)
+
     def createMenus(self):
         self.fileMenu = QMenu('&File', self)
         self.menuBar().addMenu(self.fileMenu)
 
     def createActions(self):
-        self.openAction = QAction('Open', self)
+        self.openAction = QAction('&Open', self)
+        self.openAction.setShortcut('Ctrl+O')
         self.fileMenu.addAction(self.openAction)
+
+    def openFileDialog(self):
+        '''Opens a file dialog prompt.'''
+        fileDialog = QFileDialog(self)
+        if fileDialog.exec_():
+            filename = fileDialog.selectedFiles()[0]
+            self.fileSelected.emit(filename)
 
     def show(self):
         '''Overridden show().
