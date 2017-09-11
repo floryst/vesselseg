@@ -77,6 +77,8 @@ class VTKViewer(QWidget):
         irenSlice = self.sliceRenderer.GetRenderWindow().GetInteractor()
         irenVolume = self.volumeRenderer.GetRenderWindow().GetInteractor()
 
+        irenSlice.SetInteractorStyle(vtk.vtkInteractorStyleImage())
+
         irenSlice.Initialize()
         irenVolume.Initialize()
         irenSlice.Start()
