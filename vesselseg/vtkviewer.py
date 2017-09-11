@@ -4,37 +4,37 @@ from PyQt4.QtGui import *
 import vtk
 from vtk.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 
+class SliceSlider(QWidget):
+    '''Represents the slice control widget.'''
+
+    def __init__(self, parent=None):
+        super(SliceSlider, self).__init__(parent)
+
+        self.vbox = QVBoxLayout(self)
+
+        self.sliceSlider = QSlider(Qt.Vertical, self)
+        self.vbox.addWidget(self.sliceSlider)
+
+        self.sliceLabel = QLabel('-', self)
+        self.sliceLabel.setAlignment(Qt.AlignHCenter)
+        self.vbox.addWidget(self.sliceLabel)
+
 class VTKViewer(QWidget):
     '''Renders the VTK slice and controls.'''
 
     def __init__(self, parent=None):
         super(VTKViewer, self).__init__(parent)
 
-        self.wrapper = QHBoxLayout(self)
+        self.hbox = QHBoxLayout(self)
 
-        self.frame = QFrame(self)
-        self.wrapper.addWidget(self.frame)
-
-        self.hbox = QHBoxLayout(self.frame)
-
-        self.sliceView = QVTKRenderWindowInteractor(self.frame)
+        self.sliceView = QVTKRenderWindowInteractor(self)
         self.hbox.addWidget(self.sliceView)
 
-        self.sliderBox = QVBoxLayout(self)
-        self.sliderBox.setAlignment(Qt.AlignHCenter)
-        self.hbox.addLayout(self.sliderBox)
+        self.sliceSlider = SliceSlider(self)
+        self.hbox.addWidget(self.sliceSlider)
 
-        self.sliceSlider = QSlider(Qt.Vertical, self)
-        self.sliderBox.addWidget(self.sliceSlider)
-
-        self.sliceLabel = QLabel('-', self)
-        self.sliceLabel.setAlignment(Qt.AlignHCenter)
-        self.sliderBox.addWidget(self.sliceLabel)
-
-        self.volumeView = QVTKRenderWindowInteractor(self.frame)
+        self.volumeView = QVTKRenderWindowInteractor(self)
         self.hbox.addWidget(self.volumeView)
-
-        self.setLayout(self.wrapper)
 
     def initRenderers(self):
         self.sliceRenderer = vtk.vtkRenderer()
