@@ -19,6 +19,7 @@ class VesselSegApp(QObject):
         self.viewManager = ViewManager(self.window)
 
         self.viewManager.fileSelected.connect(self.loadFile)
+        self.imageManager.imageLoaded.connect(self.viewManager.displayImage)
 
     def run(self):
         '''Runs the application.

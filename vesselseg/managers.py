@@ -43,6 +43,10 @@ class ViewManager(QObject):
 
         self.window.fileSelected.connect(self.fileSelected)
 
+    def displayImage(self, vtkImage):
+        '''Displays a VTK ImageData to the UI.'''
+        self.window.vtkView().displayImage(vtkImage)
+
     def alert(self, message):
         '''Alerts the user with some message.'''
         self.window.popupMessage(message)

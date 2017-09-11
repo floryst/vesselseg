@@ -36,6 +36,11 @@ class VTKViewer(QWidget):
         self.volumeView = QVTKRenderWindowInteractor(self)
         self.hbox.addWidget(self.volumeView)
 
+        # vtk-producers and filters
+        self.producer = vtk.vtkTrivialProducer()
+        self.reslice = vtk.vtkImageReslice()
+        self.image2worldTransform = vtk.vtkTransform()
+
     def initRenderers(self):
         self.sliceRenderer = vtk.vtkRenderer()
         self.sliceView.GetRenderWindow().AddRenderer(self.sliceRenderer)
@@ -50,3 +55,74 @@ class VTKViewer(QWidget):
         irenVolume.Initialize()
         irenSlice.Start()
         irenVolume.Start()
+
+    def displayImage(self, vtkImageData):
+        '''Updates viewer with a new image.'''
+        # show slice and volume
+        self.showSlice(vtkImageData)
+        self.showVolume(vtkImageData)
+
+    def showSlice(self, vtkImageData):
+        '''Shows slice of image.'''
+        self.producer.SetOutput(vtkImageData)
+        self.reslice.SetInputConnection(self.producer.GetOutputPort())
+        self.reslice.SetResliceAxesDirectionCosines((1,0,0), (0,1,0), (0,0,1))
+        self.reslice.SetOutputDimensionality(2)
+        self.reslice.SetInterpolationModeToLinear()
+
+        # create lookup table for intensity -> color
+        table = vtk.vtkLookupTable()
+        table.SetRange(vtkImageData.GetScalarRange())
+        table.SetValueRange(0, 1)
+        # no saturation
+        table.SetSaturationRange(0, 0)
+        table.SetRampToLinear()
+        table.Build()
+
+        # map lookup table to colors
+        colors = vtk.vtkImageMapToColors()
+        colors.SetLookupTable(table)
+        colors.SetInputConnection(self.reslice.GetOutputPort())
+
+        actor = vtk.vtkImageActor()
+        actor.GetMapper().SetInputConnection(colors.GetOutputPort())
+
+        self.sliceRenderer.RemoveAllViewProps()
+        self.sliceRenderer.AddActor(actor)
+
+        self.sliceRenderer.ResetCamera()
+        self.sliceView.GetRenderWindow().Render()
+
+    def showVolume(self, vtkImageData):
+        '''Shows volume of image.'''
+        mapper = vtk.vtkSmartVolumeMapper()
+        mapper.SetInputData(vtkImageData)
+
+        scalarRange = vtkImageData.GetScalarRange()
+
+        opacity = vtk.vtkPiecewiseFunction()
+        opacity.AddPoint(scalarRange[0], 0.2)
+        opacity.AddPoint(scalarRange[1], 0.9)
+
+        color = vtk.vtkColorTransferFunction()
+        color.AddRGBPoint(scalarRange[0], 0, 0, 0)
+        color.AddRGBPoint(scalarRange[1], 1, 1, 1)
+
+        prop = vtk.vtkVolumeProperty()
+        prop.ShadeOff()
+        prop.SetInterpolationType(vtk.VTK_LINEAR_INTERPOLATION)
+        prop.SetColor(color)
+        prop.SetScalarOpacity(opacity)
+        # sets scalar opacity unit distance according to image spacing.
+        avgSpacing = sum(vtkImageData.GetSpacing()) / 3.0
+        prop.SetScalarOpacityUnitDistance(15 * avgSpacing)
+
+        volume = vtk.vtkVolume()
+        volume.SetMapper(mapper)
+        volume.SetProperty(prop)
+
+        self.volumeRenderer.RemoveAllViewProps()
+        self.volumeRenderer.AddViewProp(volume)
+
+        self.volumeRenderer.ResetCamera()
+        self.volumeView.GetRenderWindow().Render()

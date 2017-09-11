@@ -50,6 +50,10 @@ class MainWindow(QMainWindow):
         super(MainWindow, self).show()
         self.ui.initVTK()
 
+    def vtkView(self):
+        '''Getter for the VTKViewer.'''
+        return self.ui.vtkview
+
 class Ui(QSplitter):
     def __init__(self, parent=None):
         super(Ui, self).__init__(Qt.Horizontal, parent)
