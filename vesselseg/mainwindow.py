@@ -1,6 +1,9 @@
 from PyQt4.QtGui import *
 from PyQt4.QtCore import Qt
 
+from tabs import InfoTab, SegmentTab
+from vtkviewer import VTKViewer
+
 class MainWindow(QMainWindow):
 
     def __init__(self, parent=None):
@@ -20,6 +23,14 @@ class MainWindow(QMainWindow):
         self.openAction = QAction('Open', self)
         self.fileMenu.addAction(self.openAction)
 
+    def show(self):
+        '''Overridden show().
+
+        Must init VTK renderers AFTER main window is shown.
+        '''
+        super(MainWindow, self).show()
+        self.ui.initVTK()
+
 class Ui(QSplitter):
     def __init__(self, parent=None):
         super(Ui, self).__init__(Qt.Horizontal, parent)
@@ -27,5 +38,18 @@ class Ui(QSplitter):
         self.tabs = QTabWidget(self)
         self.addWidget(self.tabs)
 
-        self.vtkview = QWidget(self)
+        self.tubeTreeTab = QTreeView(self)
+        self.tabs.addTab(self.tubeTreeTab, 'Tubes')
+
+        self.segmentTab = SegmentTab(self)
+        self.tabs.addTab(self.segmentTab, 'Segment')
+
+        self.infoTab = InfoTab(self)
+        self.tabs.addTab(self.infoTab, 'Info')
+
+        self.vtkview = VTKViewer(self)
         self.addWidget(self.vtkview)
+
+    def initVTK(self):
+        '''Initializes the VTK renderers.'''
+        self.vtkview.initRenderers()
