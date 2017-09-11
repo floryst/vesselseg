@@ -43,3 +43,6 @@ class ViewManager(QObject):
 
         self.window.fileSelected.connect(self.fileSelected)
 
+    def alert(self, message):
+        '''Alerts the user with some message.'''
+        self.window.popupMessage(message)

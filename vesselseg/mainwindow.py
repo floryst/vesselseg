@@ -36,6 +36,12 @@ class MainWindow(QMainWindow):
             filename = fileDialog.selectedFiles()[0]
             self.fileSelected.emit(filename)
 
+    def popupMessage(self, message):
+        '''Brings up a modal box with message for the user.'''
+        msgbox = QMessageBox()
+        msgbox.setText(message)
+        msgbox.exec_()
+
     def show(self):
         '''Overridden show().
 

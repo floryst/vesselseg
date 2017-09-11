@@ -33,6 +33,8 @@ class VesselSegApp(QObject):
         filename = qfilename.toLatin1().data()
         if self.imageManager.loadImage(filename):
             return
+        else:
+            self.viewManager.alert('File %s could not opened' % filename)
 
 if __name__ == '__main__':
     app = VesselSegApp()
