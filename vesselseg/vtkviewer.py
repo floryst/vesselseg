@@ -20,10 +20,20 @@ class VTKViewer(QWidget):
         self.sliceView = QVTKRenderWindowInteractor(self.frame)
         self.hbox.addWidget(self.sliceView)
 
+        self.sliderBox = QVBoxLayout(self)
+        self.sliderBox.setAlignment(Qt.AlignHCenter)
+        self.hbox.addLayout(self.sliderBox)
+
+        self.sliceSlider = QSlider(Qt.Vertical, self)
+        self.sliderBox.addWidget(self.sliceSlider)
+
+        self.sliceLabel = QLabel('-', self)
+        self.sliceLabel.setAlignment(Qt.AlignHCenter)
+        self.sliderBox.addWidget(self.sliceLabel)
+
         self.volumeView = QVTKRenderWindowInteractor(self.frame)
         self.hbox.addWidget(self.volumeView)
 
-        self.frame.setLayout(self.hbox)
         self.setLayout(self.wrapper)
 
     def initRenderers(self):
