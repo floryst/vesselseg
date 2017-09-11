@@ -46,6 +46,7 @@ class ViewManager(QObject):
     def displayImage(self, vtkImage):
         '''Displays a VTK ImageData to the UI.'''
         self.window.vtkView().displayImage(vtkImage)
+        self.window.infoTabView().showImageMetadata(vtkImage)
 
     def alert(self, message):
         '''Alerts the user with some message.'''

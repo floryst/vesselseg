@@ -54,6 +54,10 @@ class MainWindow(QMainWindow):
         '''Getter for the VTKViewer.'''
         return self.ui.vtkview
 
+    def infoTabView(self):
+        '''Getter for info tab.'''
+        return self.ui.infoTab
+
 class Ui(QSplitter):
     def __init__(self, parent=None):
         super(Ui, self).__init__(Qt.Horizontal, parent)
