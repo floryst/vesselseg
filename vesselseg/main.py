@@ -6,6 +6,7 @@ signal.signal(signal.SIGINT, signal.SIG_DFL)
 from PyQt4.QtGui import QApplication
 from PyQt4.QtCore import QObject
 from mainwindow import MainWindow
+from managers import ImageManager, ViewManager
 
 class VesselSegApp(QObject):
 
@@ -14,6 +15,10 @@ class VesselSegApp(QObject):
 
         self.qapp = QApplication(sys.argv)
         self.window = MainWindow()
+        self.imageManager = ImageManager()
+        self.viewManager = ViewManager(self.window)
+
+        self.viewManager.fileSelected.connect(self.loadFile)
 
     def run(self):
         '''Runs the application.
@@ -23,6 +28,11 @@ class VesselSegApp(QObject):
         '''
         self.window.show()
         return self.qapp.exec_()
+
+    def loadFile(self, qfilename):
+        filename = qfilename.toLatin1().data()
+        if self.imageManager.loadImage(filename):
+            return
 
 if __name__ == '__main__':
     app = VesselSegApp()
