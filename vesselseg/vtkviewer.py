@@ -7,17 +7,41 @@ from vtk.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 class SliceSlider(QWidget):
     '''Represents the slice control widget.'''
 
+    # signal: slice position changed
+    slicePosChanged = pyqtSignal(int)
+
     def __init__(self, parent=None):
         super(SliceSlider, self).__init__(parent)
 
         self.vbox = QVBoxLayout(self)
 
         self.sliceSlider = QSlider(Qt.Vertical, self)
+        self.sliceSlider.setTickInterval(1)
         self.vbox.addWidget(self.sliceSlider)
 
         self.sliceLabel = QLabel('-', self)
         self.sliceLabel.setAlignment(Qt.AlignHCenter)
         self.vbox.addWidget(self.sliceLabel)
+
+        self.sliceSlider.valueChanged.connect(self.updateSlicePosition)
+
+    def updateSlicePosition(self, pos):
+        '''Notifies of current slice position.'''
+        self.setSliceLabel(pos)
+        self.slicePosChanged.emit(pos)
+
+    def setPosition(self, pos):
+        '''Sets the current position.'''
+        self.sliceSlider.setValue(pos)
+        self.setSliceLabel(pos)
+
+    def setRange(self, vmin, vmax):
+        '''Sets range of slider.'''
+        self.sliceSlider.setRange(vmin, vmax)
+
+    def setSliceLabel(self, pos):
+        '''Sets slice label.'''
+        self.sliceLabel.setText(str(pos))
 
 class VTKViewer(QWidget):
     '''Renders the VTK slice and controls.'''
@@ -35,6 +59,8 @@ class VTKViewer(QWidget):
 
         self.volumeView = QVTKRenderWindowInteractor(self)
         self.hbox.addWidget(self.volumeView)
+
+        self.sliceSlider.slicePosChanged.connect(self.updateSlice)
 
         # vtk-producers and filters
         self.producer = vtk.vtkTrivialProducer()
@@ -61,6 +87,17 @@ class VTKViewer(QWidget):
         # show slice and volume
         self.showSlice(vtkImageData)
         self.showVolume(vtkImageData)
+
+        # compute transformation
+        self.image2worldTransform.PostMultiply()
+        self.image2worldTransform.Translate(vtkImageData.GetOrigin())
+        self.image2worldTransform.Scale(vtkImageData.GetSpacing())
+
+        # set z slice
+        _, _, _, _, zmin, zmax = vtkImageData.GetExtent()
+        slicePos = int((zmax+zmin)/2.0)
+        self.sliceSlider.setRange(zmin, zmax)
+        self.sliceSlider.setPosition(slicePos)
 
     def showSlice(self, vtkImageData):
         '''Shows slice of image.'''
@@ -91,7 +128,8 @@ class VTKViewer(QWidget):
         self.sliceRenderer.AddActor(actor)
 
         self.sliceRenderer.ResetCamera()
-        self.sliceView.GetRenderWindow().Render()
+        # Don't actually render slice, since setting the slice position will
+        # force render. If we render here, there will be a flicker of the slice.
 
     def showVolume(self, vtkImageData):
         '''Shows volume of image.'''
@@ -126,3 +164,12 @@ class VTKViewer(QWidget):
 
         self.volumeRenderer.ResetCamera()
         self.volumeView.GetRenderWindow().Render()
+
+    def updateSlice(self, pos):
+        '''Re-renders the slice with a new position.'''
+        # z slice
+        coords = (0, 0, pos)
+        transformed = self.image2worldTransform.TransformPoint(coords)
+        self.reslice.SetResliceAxesOrigin(0, 0, transformed[2])
+        self.reslice.Update()
+        self.sliceView.GetRenderWindow().Render()
