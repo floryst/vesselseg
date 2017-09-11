@@ -1,6 +1,8 @@
 from PyQt4.QtGui import *
 from PyQt4.QtCore import Qt
 
+from tabs import InfoTab, SegmentTab
+
 class MainWindow(QMainWindow):
 
     def __init__(self, parent=None):
@@ -26,6 +28,15 @@ class Ui(QSplitter):
 
         self.tabs = QTabWidget(self)
         self.addWidget(self.tabs)
+
+        self.tubeTreeTab = QTreeView(self)
+        self.tabs.addTab(self.tubeTreeTab, 'Tubes')
+
+        self.segmentTab = SegmentTab(self)
+        self.tabs.addTab(self.segmentTab, 'Segment')
+
+        self.infoTab = InfoTab(self)
+        self.tabs.addTab(self.infoTab, 'Info')
 
         self.vtkview = QWidget(self)
         self.addWidget(self.vtkview)
