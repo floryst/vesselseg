@@ -46,6 +46,25 @@ class SliceSlider(QWidget):
 class VTKViewer(QWidget):
     '''Renders the VTK slice and controls.'''
 
+    class ClickInteractorStyleImage(vtk.vtkInteractorStyleImage):
+        '''Listens for click events and invokes LeftButtonClickEvent.'''
+
+        def __init__(self):
+            self.clickX, self.clickY = (0, 0)
+
+            self.AddObserver('LeftButtonPressEvent', self.onLeftButtonDown)
+            self.AddObserver('LeftButtonReleaseEvent', self.onLeftButtonUp)
+
+        def onLeftButtonDown(self, istyle, event):
+            self.clickX, self.clickY = istyle.GetInteractor().GetEventPosition()
+            self.OnLeftButtonDown()
+
+        def onLeftButtonUp(self, istyle, event):
+            evX, evY = istyle.GetInteractor().GetEventPosition()
+            if evX == self.clickX and evY == self.clickY:
+                self.InvokeEvent('LeftButtonClickEvent')
+            self.OnLeftButtonUp()
+
     def __init__(self, parent=None):
         super(VTKViewer, self).__init__(parent)
 
@@ -79,7 +98,8 @@ class VTKViewer(QWidget):
         irenSlice = self.sliceRenderer.GetRenderWindow().GetInteractor()
         irenVolume = self.volumeRenderer.GetRenderWindow().GetInteractor()
 
-        irenSlice.SetInteractorStyle(vtk.vtkInteractorStyleImage())
+        istyleSlice = self.ClickInteractorStyleImage()
+        irenSlice.SetInteractorStyle(istyleSlice)
 
         irenSlice.Initialize()
         irenVolume.Initialize()
