@@ -18,6 +18,8 @@ class VesselSegApp(QObject):
         self.imageManager = ImageManager()
         self.viewManager = ViewManager(self.window)
 
+        self.viewManager.setSegmentScale(self.segmentManager.scale())
+
         self.viewManager.fileSelected.connect(self.loadFile)
         self.imageManager.imageLoaded.connect(self.viewManager.displayImage)
 

@@ -51,3 +51,7 @@ class ViewManager(QObject):
     def alert(self, message):
         '''Alerts the user with some message.'''
         self.window.popupMessage(message)
+
+    def setSegmentScale(self, scale):
+        '''Updates view with scale.'''
+        self.window.segmentTabView().setScale(scale)
