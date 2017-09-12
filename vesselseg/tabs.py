@@ -14,6 +14,15 @@ class SegmentTab(QWidget):
     # signal: scale input changed
     scaleChanged = pyqtSignal(float)
 
+    SCALE_SIZES = [
+        ('Custom', 1.0),
+        ('Small', 0.5),
+        ('Medium', 1.0),
+        ('Large', 1.5),
+        ('Large++', 2.0),
+        ('Huge', 5.0),
+    ]
+
     def __init__(self, parent=None):
         super(SegmentTab, self).__init__(parent)
 
@@ -36,6 +45,8 @@ class SegmentTab(QWidget):
         self.grid.addWidget(self.scaleInput, 1, 1)
 
         self.scaleCombo = QComboBox(self)
+        for size, _ in self.SCALE_SIZES:
+            self.scaleCombo.addItem(size)
         self.grid.addWidget(self.scaleCombo, 1, 2)
 
         spacer = QSpacerItem(40, 20, QSizePolicy.Minimum, QSizePolicy.Expanding)
@@ -43,10 +54,25 @@ class SegmentTab(QWidget):
 
         self.scaleInput.textChanged.connect(
                 lambda s: self.scaleChanged.emit(float(s or 0)))
+        self.scaleCombo.activated.connect(self.setScalePreset)
 
     def setScale(self, scale):
         '''Setter for scale.'''
         self.scaleInput.setText(str(scale))
+
+    def setScalePreset(self, index):
+        '''Sets the scale according to a preset.
+
+        Args:
+            index: the index into SCALE_SIZES
+        '''
+        preset, scale = self.SCALE_SIZES[index]
+        # TODO handle enabled/disabled UI
+        if preset == 'Custom':
+            self.scaleInput.setEnabled(True)
+        else:
+            self.scaleInput.setEnabled(False)
+            self.setScale(scale)
 
 class InfoTab(QLabel):
     '''Info tab holds miscellaneous information.'''
