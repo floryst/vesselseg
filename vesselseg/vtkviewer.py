@@ -46,6 +46,9 @@ class SliceSlider(QWidget):
 class VTKViewer(QWidget):
     '''Renders the VTK slice and controls.'''
 
+    # signal: image voxel selected at given coord
+    imageVoxelSelected = pyqtSignal(float, float, float)
+
     class ClickInteractorStyleImage(vtk.vtkInteractorStyleImage):
         '''Listens for click events and invokes LeftButtonClickEvent.'''
 
@@ -105,6 +108,17 @@ class VTKViewer(QWidget):
         irenVolume.Initialize()
         irenSlice.Start()
         irenVolume.Start()
+
+        istyleSlice.AddObserver('LeftButtonClickEvent', self.onSliceClicked)
+
+    def onSliceClicked(self, istyle, event):
+        '''Slick click callback'''
+        clickX, clickY = istyle.GetInteractor().GetEventPosition()
+        picker = vtk.vtkCellPicker()
+        if picker.Pick(clickX, clickY, 0, self.sliceRenderer):
+            point = picker.GetPickedPositions().GetPoint(0)
+            # set z coord to be current slice location
+            self.imageVoxelSelected.emit(point[0], point[1], self.slicePosition)
 
     def displayImage(self, vtkImageData):
         '''Updates viewer with a new image.'''
