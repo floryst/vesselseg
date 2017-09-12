@@ -6,7 +6,7 @@ signal.signal(signal.SIGINT, signal.SIG_DFL)
 from PyQt4.QtGui import QApplication
 from PyQt4.QtCore import QObject
 from mainwindow import MainWindow
-from managers import ImageManager, ViewManager
+from managers import ImageManager, ViewManager, SegmentManager
 
 class VesselSegApp(QObject):
 
@@ -17,8 +17,12 @@ class VesselSegApp(QObject):
         self.window = MainWindow()
         self.imageManager = ImageManager()
         self.viewManager = ViewManager(self.window)
+        self.segmentManager = SegmentManager()
+
+        self.viewManager.setSegmentScale(self.segmentManager.scale())
 
         self.viewManager.fileSelected.connect(self.loadFile)
+        self.viewManager.scaleChanged.connect(self.segmentManager.setScale)
         self.imageManager.imageLoaded.connect(self.viewManager.displayImage)
 
     def run(self):

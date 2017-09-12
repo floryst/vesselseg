@@ -58,6 +58,10 @@ class MainWindow(QMainWindow):
         '''Getter for info tab.'''
         return self.ui.infoTab
 
+    def segmentTabView(self):
+        '''Getter for segment tab.'''
+        return self.ui.segmentTab
+
 class Ui(QSplitter):
     def __init__(self, parent=None):
         super(Ui, self).__init__(Qt.Horizontal, parent)
