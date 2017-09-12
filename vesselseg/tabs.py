@@ -13,6 +13,8 @@ class SegmentTab(QWidget):
 
     # signal: scale input changed
     scaleChanged = pyqtSignal(float)
+    # signal: segmentation enabled/disabled
+    segmentEnabled = pyqtSignal(bool)
 
     SCALE_SIZES = [
         ('Custom', 1.0),
@@ -52,6 +54,8 @@ class SegmentTab(QWidget):
         spacer = QSpacerItem(40, 20, QSizePolicy.Minimum, QSizePolicy.Expanding)
         self.grid.addItem(spacer, 2, 0)
 
+        self.segmentBtn.clicked.connect(
+                lambda: self.segmentEnabled.emit(self.segmentBtn.isChecked()))
         self.scaleInput.textChanged.connect(
                 lambda s: self.scaleChanged.emit(float(s or 0)))
         self.scaleCombo.activated.connect(self.setScalePreset)
@@ -73,6 +77,10 @@ class SegmentTab(QWidget):
         else:
             self.scaleInput.setEnabled(False)
             self.setScale(scale)
+
+    def isSegmentEnabled(self):
+        '''Checks if segmentation is enabled.'''
+        return self.segmentBtn.isChecked()
 
 class InfoTab(QLabel):
     '''Info tab holds miscellaneous information.'''
