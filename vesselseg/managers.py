@@ -73,6 +73,8 @@ class SegmentManager(QObject):
 
     DEFAULT_SCALE = 2.0
 
+    tubeSegmented = pyqtSignal()
+
     def __init__(self, parent=None):
         super(SegmentManager, self).__init__(parent)
 
@@ -84,6 +86,8 @@ class SegmentManager(QObject):
 
         self.worker.terminated.connect(self.workerThread.quit)
         self.workerThread.started.connect(self.worker.run)
+
+        self.worker.jobFinished.connect(self.processSegmentResult)
 
         self.workerThread.start()
 
@@ -110,3 +114,8 @@ class SegmentManager(QObject):
         args.scale = self.scale()
         args.coords = (x, y, z)
         self.worker.extractTube(args)
+
+    def processSegmentResult(self, result):
+        '''Handles segment results.'''
+        if result.tube:
+            self.tubeSegmented.emit(result.tube)
