@@ -1,4 +1,4 @@
-from PyQt4.QtCore import Qt
+from PyQt4.QtCore import Qt, pyqtSignal
 from PyQt4.QtGui import *
 
 METADATA_TEMPLATE = \
@@ -10,6 +10,9 @@ METADATA_TEMPLATE = \
 
 class SegmentTab(QWidget):
     '''Segment tab holds parameter inputs for segmentation.'''
+
+    # signal: scale input changed
+    scaleChanged = pyqtSignal(float)
 
     def __init__(self, parent=None):
         super(SegmentTab, self).__init__(parent)
@@ -37,6 +40,9 @@ class SegmentTab(QWidget):
 
         spacer = QSpacerItem(40, 20, QSizePolicy.Minimum, QSizePolicy.Expanding)
         self.grid.addItem(spacer, 2, 0)
+
+        self.scaleInput.textChanged.connect(
+                lambda s: self.scaleChanged.emit(float(s or 0)))
 
     def setScale(self, scale):
         '''Setter for scale.'''

@@ -35,6 +35,8 @@ class ViewManager(QObject):
 
     # signal: file was selected for loading
     fileSelected = pyqtSignal(str)
+    # signal: scale input changed
+    scaleChanged = pyqtSignal(float)
 
     def __init__(self, window, parent=None):
         super(ViewManager, self).__init__(parent)
@@ -42,6 +44,7 @@ class ViewManager(QObject):
         self.window = window
 
         self.window.fileSelected.connect(self.fileSelected)
+        self.window.segmentTabView().scaleChanged.connect(self.scaleChanged)
 
     def displayImage(self, vtkImage):
         '''Displays a VTK ImageData to the UI.'''
@@ -55,3 +58,26 @@ class ViewManager(QObject):
     def setSegmentScale(self, scale):
         '''Updates view with scale.'''
         self.window.segmentTabView().setScale(scale)
+
+class SegmentManager(QObject):
+    '''Manager of tube segmentation.'''
+
+    DEFAULT_SCALE = 2.0
+
+    def __init__(self, parent=None):
+        super(SegmentManager, self).__init__(parent)
+
+        self._scale = self.DEFAULT_SCALE
+
+    def scale(self):
+        '''Getter for scale.'''
+        return self._scale
+
+    def setScale(self, scale):
+        '''Setter for scale.
+
+        If scale is less than 0, then set to default.
+        '''
+        if scale <= 0.0:
+            scale = self.DEFAULT_SCALE
+        self._scale = scale
