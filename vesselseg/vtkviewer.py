@@ -49,6 +49,8 @@ class VTKViewer(QWidget):
     def __init__(self, parent=None):
         super(VTKViewer, self).__init__(parent)
 
+        self.slicePosition = 0
+
         self.hbox = QHBoxLayout(self)
 
         self.sliceView = QVTKRenderWindowInteractor(self)
@@ -172,6 +174,8 @@ class VTKViewer(QWidget):
         # z slice
         coords = (0, 0, pos)
         transformed = self.image2worldTransform.TransformPoint(coords)
-        self.reslice.SetResliceAxesOrigin(0, 0, transformed[2])
+        self.slicePosition = transformed[2]
+
+        self.reslice.SetResliceAxesOrigin(0, 0, self.slicePosition)
         self.reslice.Update()
         self.sliceView.GetRenderWindow().Render()
