@@ -49,6 +49,8 @@ class VTKViewer(QWidget):
     def __init__(self, parent=None):
         super(VTKViewer, self).__init__(parent)
 
+        self.slicePosition = 0
+
         self.hbox = QHBoxLayout(self)
 
         self.sliceView = QVTKRenderWindowInteractor(self)
@@ -91,6 +93,7 @@ class VTKViewer(QWidget):
         self.showVolume(vtkImageData)
 
         # compute transformation
+        self.image2worldTransform.Identity()
         self.image2worldTransform.PostMultiply()
         self.image2worldTransform.Translate(vtkImageData.GetOrigin())
         self.image2worldTransform.Scale(vtkImageData.GetSpacing())
@@ -100,6 +103,7 @@ class VTKViewer(QWidget):
         slicePos = int((zmax+zmin)/2.0)
         self.sliceSlider.setRange(zmin, zmax)
         self.sliceSlider.setPosition(slicePos)
+        self.updateSlice(slicePos)
 
     def showSlice(self, vtkImageData):
         '''Shows slice of image.'''
@@ -172,6 +176,8 @@ class VTKViewer(QWidget):
         # z slice
         coords = (0, 0, pos)
         transformed = self.image2worldTransform.TransformPoint(coords)
-        self.reslice.SetResliceAxesOrigin(0, 0, transformed[2])
+        self.slicePosition = transformed[2]
+
+        self.reslice.SetResliceAxesOrigin(0, 0, self.slicePosition)
         self.reslice.Update()
         self.sliceView.GetRenderWindow().Render()
