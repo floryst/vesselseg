@@ -93,6 +93,7 @@ class VTKViewer(QWidget):
         self.showVolume(vtkImageData)
 
         # compute transformation
+        self.image2worldTransform.Identity()
         self.image2worldTransform.PostMultiply()
         self.image2worldTransform.Translate(vtkImageData.GetOrigin())
         self.image2worldTransform.Scale(vtkImageData.GetSpacing())
@@ -102,6 +103,7 @@ class VTKViewer(QWidget):
         slicePos = int((zmax+zmin)/2.0)
         self.sliceSlider.setRange(zmin, zmax)
         self.sliceSlider.setPosition(slicePos)
+        self.updateSlice(slicePos)
 
     def showSlice(self, vtkImageData):
         '''Shows slice of image.'''
