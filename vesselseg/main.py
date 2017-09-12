@@ -22,8 +22,10 @@ class VesselSegApp(QObject):
         self.viewManager.setSegmentScale(self.segmentManager.scale())
 
         self.viewManager.fileSelected.connect(self.loadFile)
+        self.viewManager.imageVoxelSelected.connect(self.segmentTube)
         self.viewManager.scaleChanged.connect(self.segmentManager.setScale)
         self.imageManager.imageLoaded.connect(self.viewManager.displayImage)
+        self.imageManager.imageLoaded.connect(self.segmentManager.setImage)
 
     def run(self):
         '''Runs the application.
@@ -40,6 +42,10 @@ class VesselSegApp(QObject):
             return
         else:
             self.viewManager.alert('File %s could not opened' % filename)
+
+    def segmentTube(self, x, y, z):
+        if self.viewManager.isSegmentEnabled():
+            self.segmentManager.segmentTube(x, y, z)
 
 if __name__ == '__main__':
     app = VesselSegApp()

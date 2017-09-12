@@ -1,6 +1,8 @@
-from PyQt4.QtCore import QObject, pyqtSignal
+from PyQt4.QtCore import QThread, QObject, pyqtSignal
 
 import vtk
+
+from segmenttubes import SegmentWorker, SegmentArgs
 
 class ImageManager(QObject):
     '''Manager for the loaded image.'''
@@ -37,6 +39,8 @@ class ViewManager(QObject):
     fileSelected = pyqtSignal(str)
     # signal: scale input changed
     scaleChanged = pyqtSignal(float)
+    # signal: image voxel selected
+    imageVoxelSelected = pyqtSignal(float, float, float)
 
     def __init__(self, window, parent=None):
         super(ViewManager, self).__init__(parent)
@@ -44,6 +48,7 @@ class ViewManager(QObject):
         self.window = window
 
         self.window.fileSelected.connect(self.fileSelected)
+        self.window.vtkView().imageVoxelSelected.connect(self.imageVoxelSelected)
         self.window.segmentTabView().scaleChanged.connect(self.scaleChanged)
 
     def displayImage(self, vtkImage):
@@ -59,6 +64,10 @@ class ViewManager(QObject):
         '''Updates view with scale.'''
         self.window.segmentTabView().setScale(scale)
 
+    def isSegmentEnabled(self):
+        '''Getter for segment button toggle state.'''
+        return self.window.segmentTabView().isSegmentEnabled()
+
 class SegmentManager(QObject):
     '''Manager of tube segmentation.'''
 
@@ -68,6 +77,15 @@ class SegmentManager(QObject):
         super(SegmentManager, self).__init__(parent)
 
         self._scale = self.DEFAULT_SCALE
+
+        self.worker = SegmentWorker()
+        self.workerThread = QThread()
+        self.worker.moveToThread(self.workerThread)
+
+        self.worker.terminated.connect(self.workerThread.quit)
+        self.workerThread.started.connect(self.worker.run)
+
+        self.workerThread.start()
 
     def scale(self):
         '''Getter for scale.'''
@@ -81,3 +99,14 @@ class SegmentManager(QObject):
         if scale <= 0.0:
             scale = self.DEFAULT_SCALE
         self._scale = scale
+
+    def setImage(self, vtkImageData):
+        '''Sets segmenting image.'''
+        self.worker.setImage(vtkImageData)
+
+    def segmentTube(self, x, y, z):
+        '''Segments a tube at (x, y, z).'''
+        args = SegmentArgs()
+        args.scale = self.scale()
+        args.coords = (x, y, z)
+        self.worker.extractTube(args)
