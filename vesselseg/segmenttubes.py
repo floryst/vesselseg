@@ -154,9 +154,6 @@ class SegmentTubes(object):
         Raises:
             Exception: could not convert VTK image to ITK image.
         '''
-
-        import time
-        print time.time()
         # convert vtkimage to itkimage
         if vtkImage.GetScalarType() not in VTK_ITK_TYPE_CONVERSION:
             raise Exception(
@@ -173,7 +170,6 @@ class SegmentTubes(object):
 
         self.segTubes = itk.TubeTKITK.SegmentTubes[self.imageType].New()
         self.segTubes.SetInputImage(self.itkImage)
-        print time.time()
 
     def extractTube(self, coords):
         '''Tries to extract a tube at coordinates.
