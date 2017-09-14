@@ -27,6 +27,8 @@ class VesselSegApp(QObject):
         self.viewManager.scaleChanged.connect(self.segmentManager.setScale)
         self.imageManager.imageLoaded.connect(self.viewManager.displayImage)
         self.imageManager.imageLoaded.connect(self.segmentManager.setImage)
+        self.imageManager.imageLoaded.connect(
+                lambda _: self.tubeManager.reset())
         self.segmentManager.tubeSegmented.connect(
                 self.tubeManager.addSegmentedTube)
 
