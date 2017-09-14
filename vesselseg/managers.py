@@ -4,6 +4,7 @@ import vtk
 import itk
 
 from segmenttubes import SegmentWorker, SegmentArgs
+from models import TubeTreeViewModel
 
 class ImageManager(QObject):
     '''Manager for the loaded image.'''
@@ -85,6 +86,12 @@ class ViewManager(QObject):
         '''Displays a VTK ImageData to the UI.'''
         self.window.vtkView().displayImage(vtkImage)
         self.window.infoTabView().showImageMetadata(vtkImage)
+
+    def displayTubes(self, tubeGroup):
+        '''Display tubes in UI.'''
+        self.tubePolyManager.updatePolyData(tubeGroup)
+        # display tube tree
+        self.window.tubeTreeTabView().setModel(TubeTreeViewModel(tubeGroup))
 
     def alert(self, message):
         '''Alerts the user with some message.'''

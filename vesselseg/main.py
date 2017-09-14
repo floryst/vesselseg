@@ -31,6 +31,7 @@ class VesselSegApp(QObject):
                 lambda _: self.tubeManager.reset())
         self.segmentManager.tubeSegmented.connect(
                 self.tubeManager.addSegmentedTube)
+        self.tubeManager.tubesUpdated.connect(self.viewManager.displayTubes)
 
     def run(self):
         '''Runs the application.
