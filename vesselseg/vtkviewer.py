@@ -90,6 +90,8 @@ class VTKViewer(QWidget):
         self.producer = vtk.vtkTrivialProducer()
         self.reslice = vtk.vtkImageReslice()
         self.image2worldTransform = vtk.vtkTransform()
+        self.tubeProducer = vtk.vtkTrivialProducer()
+        self.tubeActor = None
 
     def initRenderers(self):
         self.sliceRenderer = vtk.vtkRenderer()
@@ -203,6 +205,28 @@ class VTKViewer(QWidget):
         self.volumeRenderer.AddViewProp(volume)
 
         self.volumeRenderer.ResetCamera()
+        self.volumeView.GetRenderWindow().Render()
+
+    def showTubeBlocks(self, tubeBlocks):
+        '''Shows tube blocks in scene.'''
+        self.tubeProducer.SetOutput(tubeBlocks)
+        self.tubeProducer.Update()
+
+        mapper = vtk.vtkCompositePolyDataMapper2()
+        mapper.SetInputConnection(self.tubeProducer.GetOutputPort())
+
+        cdsa = vtk.vtkCompositeDataDisplayAttributes()
+        cdsa.SetBlockColor(0, (1,0,0))
+
+        mapper.SetCompositeDataDisplayAttributes(cdsa)
+
+        actor = vtk.vtkActor()
+        actor.SetMapper(mapper)
+
+        # remove old actor and set new actor
+        self.volumeRenderer.RemoveActor(self.tubeActor)
+        self.tubeActor = actor
+        self.volumeRenderer.AddActor(self.tubeActor)
         self.volumeView.GetRenderWindow().Render()
 
     def updateSlice(self, pos):

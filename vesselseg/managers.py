@@ -3,7 +3,7 @@ from PyQt4.QtCore import QThread, QObject, pyqtSignal
 import vtk
 import itk
 
-from segmenttubes import SegmentWorker, SegmentArgs
+from segmenttubes import SegmentWorker, SegmentArgs, TubeIterator, GetTubePoints
 from models import TubeTreeViewModel
 
 class ImageManager(QObject):
@@ -63,6 +63,90 @@ class TubeManager(QObject):
         self._segmentedGroup.Clear()
         self._tubeGroup.AddSpatialObject(self._segmentedGroup)
 
+class TubePolyManager(QObject):
+    '''Manager for tube poly data.'''
+
+    def __init__(self, parent=None):
+        super(TubePolyManager, self).__init__(parent)
+
+        # str(hash(tube)) -> vtkPolyData
+        self.tubePolys = dict()
+
+    def updatePolyData(self, tubeGroup):
+        '''Updates the polygonal data.'''
+        newTubePolys = dict()
+        for tube in TubeIterator(tubeGroup):
+            tubeId = str(hash(tube))
+            if tubeId in self.tubePolys:
+                newTubePolys[tubeId] = self.tubePolys[tubeId]
+            else:
+                newTubePolys[tubeId] = self._createTubePolyData(tube)
+        self.tubePolys = newTubePolys
+
+    def tubeBlocks(self):
+        '''Generates a tube vtkMultiBlockDataSet.'''
+        blocks = vtk.vtkMultiBlockDataSet()
+        for tubeId in self.tubePolys:
+            poly = self.tubePolys[tubeId]
+            curIndex = blocks.GetNumberOfBlocks()
+            blocks.SetBlock(curIndex, poly)
+            #blocks.GetMetaData(curIndex).Set(TUBE_ID_KEY, tubeId)
+        return blocks
+
+    def _createTubePolyData(self, tube):
+        '''Generates polydata from an itk.VesselTubeSpatialObject.'''
+        points = GetTubePoints(tube)
+
+        # Convert points to world space.
+        tube.ComputeObjectToWorldTransform()
+        transform = tube.GetIndexToWorldTransform()
+        # Get scaling vector from transform matrix diagonal.
+        scaling = [transform.GetMatrix()(i,i) for i in range(3)]
+        # Use average of scaling vector for scale since TubeFilter
+        # doesn't seem to support ellipsoid.
+        scale = sum(scaling) / len(scaling)
+
+        for i in range(len(points)):
+            pt, radius = points[i]
+            pt = transform.TransformPoint(pt)
+            points[i] = (pt, radius*scale)
+
+        vpoints = vtk.vtkPoints()
+        vpoints.SetNumberOfPoints(len(points))
+        scalars = vtk.vtkFloatArray()
+        scalars.SetNumberOfValues(len(points))
+        scalars.SetName('Radii')
+
+        minRadius = float('inf')
+        maxRadius = float('-inf')
+        for i, (pt, r) in enumerate(points):
+            vpoints.SetPoint(i, pt)
+            scalars.SetValue(i, r)
+            minRadius = min(r, minRadius)
+            maxRadius = max(r, maxRadius)
+
+        pl = vtk.vtkPolyLine()
+        pl.Initialize(len(points), range(len(points)), vpoints)
+
+        ca = vtk.vtkCellArray()
+        ca.InsertNextCell(pl)
+
+        pd = vtk.vtkPolyData()
+        pd.SetLines(ca)
+        pd.SetPoints(vpoints)
+        pd.GetPointData().SetScalars(scalars)
+        pd.GetPointData().SetActiveScalars('Radii')
+
+        tf = vtk.vtkTubeFilter()
+        tf.SetInputData(pd)
+        tf.SetVaryRadiusToVaryRadiusByAbsoluteScalar()
+        tf.SetRadius(minRadius)
+        tf.SetRadiusFactor(maxRadius/minRadius)
+        tf.SetNumberOfSides(20)
+        tf.Update()
+
+        return tf.GetOutput()
+
 class ViewManager(QObject):
     '''Manager of the UI.'''
 
@@ -77,6 +161,7 @@ class ViewManager(QObject):
         super(ViewManager, self).__init__(parent)
 
         self.window = window
+        self.tubePolyManager = TubePolyManager()
 
         self.window.fileSelected.connect(self.fileSelected)
         self.window.vtkView().imageVoxelSelected.connect(self.imageVoxelSelected)
@@ -92,6 +177,8 @@ class ViewManager(QObject):
         self.tubePolyManager.updatePolyData(tubeGroup)
         # display tube tree
         self.window.tubeTreeTabView().setModel(TubeTreeViewModel(tubeGroup))
+        # display tubes in 3D scene
+        self.window.vtkView().showTubeBlocks(self.tubePolyManager.tubeBlocks())
 
     def alert(self, message):
         '''Alerts the user with some message.'''
