@@ -1,6 +1,7 @@
 from PyQt4.QtCore import QThread, QObject, pyqtSignal
 
 import vtk
+import itk
 
 from segmenttubes import SegmentWorker, SegmentArgs
 
@@ -60,6 +61,7 @@ class TubeManager(QObject):
         self._tubeGroup.Clear()
         self._segmentedGroup.Clear()
         self._tubeGroup.AddSpatialObject(self._segmentedGroup)
+
 class ViewManager(QObject):
     '''Manager of the UI.'''
 
@@ -101,7 +103,7 @@ class SegmentManager(QObject):
 
     DEFAULT_SCALE = 2.0
 
-    tubeSegmented = pyqtSignal()
+    tubeSegmented = pyqtSignal(itk.VesselTubeSpatialObject[3])
 
     def __init__(self, parent=None):
         super(SegmentManager, self).__init__(parent)
