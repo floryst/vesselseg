@@ -48,6 +48,8 @@ class VTKViewer(QWidget):
 
     # signal: image voxel selected at given coord
     imageVoxelSelected = pyqtSignal(float, float, float)
+    # signal: a block was selected in volume renderer
+    volumeBlockSelected = pyqtSignal(int)
 
     class ClickInteractorStyleImage(vtk.vtkInteractorStyleImage):
         '''Listens for click events and invokes LeftButtonClickEvent.'''
@@ -122,6 +124,11 @@ class VTKViewer(QWidget):
         irenSlice = self.sliceRenderer.GetRenderWindow().GetInteractor()
         irenVolume = self.volumeRenderer.GetRenderWindow().GetInteractor()
 
+        # set volume picker, since we need to have a pick list
+        volumePicker = vtk.vtkCellPicker()
+        volumePicker.SetPickFromList(True)
+        irenVolume.SetPicker(volumePicker)
+
         istyleSlice = self.ClickInteractorStyleImage()
         irenSlice.SetInteractorStyle(istyleSlice)
 
@@ -148,6 +155,9 @@ class VTKViewer(QWidget):
     def onVolumeClicked(self, istyle, event):
         '''Volume click callback'''
         clickX, clickY = istyle.GetInteractor().GetEventPosition()
+        picker = istyle.GetInteractor().GetPicker()
+        if picker.Pick(clickX, clickY, 0, self.volumeRenderer):
+            self.volumeBlockSelected.emit(picker.GetFlatBlockIndex())
 
     def displayImage(self, vtkImageData):
         '''Updates viewer with a new image.'''
@@ -250,10 +260,17 @@ class VTKViewer(QWidget):
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)
 
+        picker = self.volumeRenderer.GetRenderWindow().GetInteractor() \
+                .GetPicker()
+
         # remove old actor and set new actor
         self.volumeRenderer.RemoveActor(self.tubeActor)
+        picker.DeletePickList(actor)
+
         self.tubeActor = actor
         self.volumeRenderer.AddActor(self.tubeActor)
+        picker.AddPickList(actor)
+
         self.volumeView.GetRenderWindow().Render()
 
     def updateSlice(self, pos):
