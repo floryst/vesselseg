@@ -8,6 +8,12 @@ METADATA_TEMPLATE = \
 <div>Spacing: %(spacingX).3f x %(spacingY).3f x %(spacingZ).3f</div>
 '''
 
+class TubeTreeTab(QTreeView):
+    '''Tube tree tab displays tubes in tree view.'''
+
+    def __init__(self, parent=None):
+        super(TubeTreeTab, self).__init__(parent)
+
 class SegmentTab(QWidget):
     '''Segment tab holds parameter inputs for segmentation.'''
 

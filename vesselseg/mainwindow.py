@@ -62,6 +62,10 @@ class MainWindow(QMainWindow):
         '''Getter for segment tab.'''
         return self.ui.segmentTab
 
+    def tubeTreeTabView(self):
+        '''Getter for tube tree tab.'''
+        return self.ui.tubeTreeTab
+
 class Ui(QSplitter):
     def __init__(self, parent=None):
         super(Ui, self).__init__(Qt.Horizontal, parent)

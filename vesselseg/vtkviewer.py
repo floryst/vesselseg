@@ -46,6 +46,28 @@ class SliceSlider(QWidget):
 class VTKViewer(QWidget):
     '''Renders the VTK slice and controls.'''
 
+    # signal: image voxel selected at given coord
+    imageVoxelSelected = pyqtSignal(float, float, float)
+
+    class ClickInteractorStyleImage(vtk.vtkInteractorStyleImage):
+        '''Listens for click events and invokes LeftButtonClickEvent.'''
+
+        def __init__(self):
+            self.clickX, self.clickY = (0, 0)
+
+            self.AddObserver('LeftButtonPressEvent', self.onLeftButtonDown)
+            self.AddObserver('LeftButtonReleaseEvent', self.onLeftButtonUp)
+
+        def onLeftButtonDown(self, istyle, event):
+            self.clickX, self.clickY = istyle.GetInteractor().GetEventPosition()
+            self.OnLeftButtonDown()
+
+        def onLeftButtonUp(self, istyle, event):
+            evX, evY = istyle.GetInteractor().GetEventPosition()
+            if evX == self.clickX and evY == self.clickY:
+                self.InvokeEvent('LeftButtonClickEvent')
+            self.OnLeftButtonUp()
+
     def __init__(self, parent=None):
         super(VTKViewer, self).__init__(parent)
 
@@ -68,6 +90,8 @@ class VTKViewer(QWidget):
         self.producer = vtk.vtkTrivialProducer()
         self.reslice = vtk.vtkImageReslice()
         self.image2worldTransform = vtk.vtkTransform()
+        self.tubeProducer = vtk.vtkTrivialProducer()
+        self.tubeActor = None
 
     def initRenderers(self):
         self.sliceRenderer = vtk.vtkRenderer()
@@ -79,12 +103,24 @@ class VTKViewer(QWidget):
         irenSlice = self.sliceRenderer.GetRenderWindow().GetInteractor()
         irenVolume = self.volumeRenderer.GetRenderWindow().GetInteractor()
 
-        irenSlice.SetInteractorStyle(vtk.vtkInteractorStyleImage())
+        istyleSlice = self.ClickInteractorStyleImage()
+        irenSlice.SetInteractorStyle(istyleSlice)
 
         irenSlice.Initialize()
         irenVolume.Initialize()
         irenSlice.Start()
         irenVolume.Start()
+
+        istyleSlice.AddObserver('LeftButtonClickEvent', self.onSliceClicked)
+
+    def onSliceClicked(self, istyle, event):
+        '''Slick click callback'''
+        clickX, clickY = istyle.GetInteractor().GetEventPosition()
+        picker = vtk.vtkCellPicker()
+        if picker.Pick(clickX, clickY, 0, self.sliceRenderer):
+            point = picker.GetPickedPositions().GetPoint(0)
+            # set z coord to be current slice location
+            self.imageVoxelSelected.emit(point[0], point[1], self.slicePosition)
 
     def displayImage(self, vtkImageData):
         '''Updates viewer with a new image.'''
@@ -169,6 +205,28 @@ class VTKViewer(QWidget):
         self.volumeRenderer.AddViewProp(volume)
 
         self.volumeRenderer.ResetCamera()
+        self.volumeView.GetRenderWindow().Render()
+
+    def showTubeBlocks(self, tubeBlocks):
+        '''Shows tube blocks in scene.'''
+        self.tubeProducer.SetOutput(tubeBlocks)
+        self.tubeProducer.Update()
+
+        mapper = vtk.vtkCompositePolyDataMapper2()
+        mapper.SetInputConnection(self.tubeProducer.GetOutputPort())
+
+        cdsa = vtk.vtkCompositeDataDisplayAttributes()
+        cdsa.SetBlockColor(0, (1,0,0))
+
+        mapper.SetCompositeDataDisplayAttributes(cdsa)
+
+        actor = vtk.vtkActor()
+        actor.SetMapper(mapper)
+
+        # remove old actor and set new actor
+        self.volumeRenderer.RemoveActor(self.tubeActor)
+        self.tubeActor = actor
+        self.volumeRenderer.AddActor(self.tubeActor)
         self.volumeView.GetRenderWindow().Render()
 
     def updateSlice(self, pos):
