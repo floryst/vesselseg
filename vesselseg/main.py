@@ -6,7 +6,7 @@ signal.signal(signal.SIGINT, signal.SIG_DFL)
 from PyQt4.QtGui import QApplication
 from PyQt4.QtCore import QObject
 from mainwindow import MainWindow
-from managers import ImageManager, ViewManager, SegmentManager
+from managers import ImageManager, ViewManager, SegmentManager, TubeManager
 
 class VesselSegApp(QObject):
 
@@ -16,6 +16,7 @@ class VesselSegApp(QObject):
         self.qapp = QApplication(sys.argv)
         self.window = MainWindow()
         self.imageManager = ImageManager()
+        self.tubeManager = TubeManager()
         self.viewManager = ViewManager(self.window)
         self.segmentManager = SegmentManager()
 
@@ -26,6 +27,8 @@ class VesselSegApp(QObject):
         self.viewManager.scaleChanged.connect(self.segmentManager.setScale)
         self.imageManager.imageLoaded.connect(self.viewManager.displayImage)
         self.imageManager.imageLoaded.connect(self.segmentManager.setImage)
+        self.segmentManager.tubeSegmented.connect(
+                self.tubeManager.addSegmentedTube)
 
     def run(self):
         '''Runs the application.

@@ -32,6 +32,34 @@ class ImageManager(QObject):
         self.imageLoaded.emit(self.imageData)
         return True
 
+class TubeManager(QObject):
+    '''Manager for segmented and imported tubes.'''
+
+    # signal: stored tubes were updated
+    tubesUpdated = pyqtSignal(itk.GroupSpatialObject[3])
+
+    def __init__(self, parent=None):
+        super(TubeManager, self).__init__(parent)
+
+        self._tubeGroup = itk.GroupSpatialObject[3].New()
+        # segmentedGroup will be a child of tubeGroup
+        self._segmentedGroup = itk.GroupSpatialObject[3].New()
+        self._segmentedGroup.SetObjectName('Segmented Tubes')
+
+    def tubeGroup(self):
+        '''Getter for tube group.'''
+        return self._tubeGroup
+
+    def addSegmentedTube(self, tube):
+        '''Adds a segmented tube to the segmented tube set.'''
+        self._segmentedGroup.AddSpatialObject(tube)
+        self.tubesUpdated.emit(self._tubeGroup)
+
+    def reset(self):
+        '''Resets the tube manager state.'''
+        self._tubeGroup.Clear()
+        self._segmentedGroup.Clear()
+        self._tubeGroup.AddSpatialObject(self._segmentedGroup)
 class ViewManager(QObject):
     '''Manager of the UI.'''
 
