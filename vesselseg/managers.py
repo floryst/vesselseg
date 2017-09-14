@@ -2,9 +2,12 @@ from PyQt4.QtCore import QThread, QObject, pyqtSignal
 
 import vtk
 import itk
+from vtk.util import keys
 
 from segmenttubes import SegmentWorker, SegmentArgs, TubeIterator, GetTubePoints
 from models import TubeTreeViewModel
+
+TUBE_ID_KEY = keys.MakeKey(keys.StringKey, 'tube.id', '')
 
 class ImageManager(QObject):
     '''Manager for the loaded image.'''
@@ -82,6 +85,7 @@ class TubePolyManager(QObject):
             else:
                 newTubePolys[tubeId] = self._createTubePolyData(tube)
         self.tubePolys = newTubePolys
+        self._tubeBlocksModified = True
 
     def tubeBlocks(self):
         '''Generates a tube vtkMultiBlockDataSet.'''
@@ -90,7 +94,7 @@ class TubePolyManager(QObject):
             poly = self.tubePolys[tubeId]
             curIndex = blocks.GetNumberOfBlocks()
             blocks.SetBlock(curIndex, poly)
-            #blocks.GetMetaData(curIndex).Set(TUBE_ID_KEY, tubeId)
+            blocks.GetMetaData(curIndex).Set(TUBE_ID_KEY, tubeId)
         return blocks
 
     def _createTubePolyData(self, tube):
@@ -156,6 +160,8 @@ class ViewManager(QObject):
     scaleChanged = pyqtSignal(float)
     # signal: image voxel selected
     imageVoxelSelected = pyqtSignal(float, float, float)
+    # signal: a tube was selected
+    tubeSelected = pyqtSignal(str)
 
     def __init__(self, window, parent=None):
         super(ViewManager, self).__init__(parent)
@@ -165,6 +171,7 @@ class ViewManager(QObject):
 
         self.window.fileSelected.connect(self.fileSelected)
         self.window.vtkView().imageVoxelSelected.connect(self.imageVoxelSelected)
+        self.window.vtkView().volumeBlockSelected.connect(self.pickTubeBlock)
         self.window.segmentTabView().scaleChanged.connect(self.scaleChanged)
 
     def displayImage(self, vtkImage):
@@ -191,6 +198,18 @@ class ViewManager(QObject):
     def isSegmentEnabled(self):
         '''Getter for segment button toggle state.'''
         return self.window.segmentTabView().isSegmentEnabled()
+
+    def pickTubeBlock(self, blockIndex):
+        '''Picks out the clicked tube.'''
+        it = self.tubePolyManager.tubeBlocks().NewTreeIterator()
+        it.SetVisitOnlyLeaves(False)
+        it.InitTraversal()
+        while not it.IsDoneWithTraversal():
+            if blockIndex == it.GetCurrentFlatIndex():
+                tubeId = it.GetCurrentMetaData().Get(TUBE_ID_KEY)
+                self.tubeSelected.emit(tubeId)
+                break
+            it.GoToNextItem()
 
 class SegmentManager(QObject):
     '''Manager of tube segmentation.'''
