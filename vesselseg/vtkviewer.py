@@ -112,7 +112,8 @@ class VTKViewer(QWidget):
         self.reslice = vtk.vtkImageReslice()
         self.image2worldTransform = vtk.vtkTransform()
         self.tubeProducer = vtk.vtkTrivialProducer()
-        self.tubeActor = None
+        self.tubeMapper = vtk.vtkCompositePolyDataMapper2()
+        self.tubeActor = vtk.vtkActor()
 
     def initRenderers(self):
         self.sliceRenderer = vtk.vtkRenderer()
@@ -142,6 +143,17 @@ class VTKViewer(QWidget):
 
         istyleSlice.AddObserver('LeftButtonClickEvent', self.onSliceClicked)
         istyleVolume.AddObserver('LeftButtonClickEvent', self.onVolumeClicked)
+
+        # set up tube actor
+        self.tubeMapper.SetInputConnection(self.tubeProducer.GetOutputPort())
+        cdsa = vtk.vtkCompositeDataDisplayAttributes()
+        cdsa.SetBlockColor(0, (1,0,0))
+        self.tubeMapper.SetCompositeDataDisplayAttributes(cdsa)
+        self.tubeActor.SetMapper(self.tubeMapper)
+
+        picker = self.volumeRenderer.GetRenderWindow().GetInteractor() \
+                .GetPicker()
+        picker.AddPickList(self.tubeActor)
 
     def onSliceClicked(self, istyle, event):
         '''Slick click callback'''
@@ -246,31 +258,12 @@ class VTKViewer(QWidget):
 
     def showTubeBlocks(self, tubeBlocks):
         '''Shows tube blocks in scene.'''
+        # make sure tube actor is in the scene
+        if not self.volumeRenderer.HasViewProp(self.tubeActor):
+            self.volumeRenderer.AddActor(self.tubeActor)
+
         self.tubeProducer.SetOutput(tubeBlocks)
         self.tubeProducer.Update()
-
-        mapper = vtk.vtkCompositePolyDataMapper2()
-        mapper.SetInputConnection(self.tubeProducer.GetOutputPort())
-
-        cdsa = vtk.vtkCompositeDataDisplayAttributes()
-        cdsa.SetBlockColor(0, (1,0,0))
-
-        mapper.SetCompositeDataDisplayAttributes(cdsa)
-
-        actor = vtk.vtkActor()
-        actor.SetMapper(mapper)
-
-        picker = self.volumeRenderer.GetRenderWindow().GetInteractor() \
-                .GetPicker()
-
-        # remove old actor and set new actor
-        self.volumeRenderer.RemoveActor(self.tubeActor)
-        picker.DeletePickList(actor)
-
-        self.tubeActor = actor
-        self.volumeRenderer.AddActor(self.tubeActor)
-        picker.AddPickList(actor)
-
         self.volumeView.GetRenderWindow().Render()
 
     def updateSlice(self, pos):
