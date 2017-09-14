@@ -68,6 +68,25 @@ class VTKViewer(QWidget):
                 self.InvokeEvent('LeftButtonClickEvent')
             self.OnLeftButtonUp()
 
+    class ClickInteractorStyleTrackball(vtk.vtkInteractorStyleTrackballCamera):
+        '''Listens for click events and invokes LeftButtonClickEvent.'''
+
+        def __init__(self):
+            self.clickX, self.clickY = (0, 0)
+
+            self.AddObserver('LeftButtonPressEvent', self.onLeftButtonDown)
+            self.AddObserver('LeftButtonReleaseEvent', self.onLeftButtonUp)
+
+        def onLeftButtonDown(self, istyle, event):
+            self.clickX, self.clickY = istyle.GetInteractor().GetEventPosition()
+            self.OnLeftButtonDown()
+
+        def onLeftButtonUp(self, istyle, event):
+            evX, evY = istyle.GetInteractor().GetEventPosition()
+            if evX == self.clickX and evY == self.clickY:
+                self.InvokeEvent('LeftButtonClickEvent')
+            self.OnLeftButtonUp()
+
     def __init__(self, parent=None):
         super(VTKViewer, self).__init__(parent)
 
@@ -106,12 +125,16 @@ class VTKViewer(QWidget):
         istyleSlice = self.ClickInteractorStyleImage()
         irenSlice.SetInteractorStyle(istyleSlice)
 
+        istyleVolume = self.ClickInteractorStyleTrackball()
+        irenVolume.SetInteractorStyle(istyleVolume)
+
         irenSlice.Initialize()
         irenVolume.Initialize()
         irenSlice.Start()
         irenVolume.Start()
 
         istyleSlice.AddObserver('LeftButtonClickEvent', self.onSliceClicked)
+        istyleVolume.AddObserver('LeftButtonClickEvent', self.onVolumeClicked)
 
     def onSliceClicked(self, istyle, event):
         '''Slick click callback'''
@@ -121,6 +144,10 @@ class VTKViewer(QWidget):
             point = picker.GetPickedPositions().GetPoint(0)
             # set z coord to be current slice location
             self.imageVoxelSelected.emit(point[0], point[1], self.slicePosition)
+
+    def onVolumeClicked(self, istyle, event):
+        '''Volume click callback'''
+        clickX, clickY = istyle.GetInteractor().GetEventPosition()
 
     def displayImage(self, vtkImageData):
         '''Updates viewer with a new image.'''
