@@ -43,10 +43,11 @@ class TubeManager(QObject):
     def __init__(self, parent=None):
         super(TubeManager, self).__init__(parent)
 
-        self._tubeGroup = itk.GroupSpatialObject[3].New()
+        self._tubeGroup = None
         # segmentedGroup will be a child of tubeGroup
-        self._segmentedGroup = itk.GroupSpatialObject[3].New()
-        self._segmentedGroup.SetObjectName('Segmented Tubes')
+        self._segmentedGroup = None
+
+        self.reset()
 
     def tubeGroup(self):
         '''Getter for tube group.'''
@@ -59,9 +60,11 @@ class TubeManager(QObject):
 
     def reset(self):
         '''Resets the tube manager state.'''
-        self._tubeGroup.Clear()
-        self._segmentedGroup.Clear()
+        self._tubeGroup = itk.GroupSpatialObject[3].New()
+        self._segmentedGroup = itk.GroupSpatialObject[3].New()
+        self._segmentedGroup.SetObjectName('Segmented Tubes')
         self._tubeGroup.AddSpatialObject(self._segmentedGroup)
+        self.tubesUpdated.emit(self._tubeGroup)
 
 class TubePolyManager(QObject):
     '''Manager for tube poly data.'''
