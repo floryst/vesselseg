@@ -229,6 +229,27 @@ class ViewManager(QObject):
                 break
             it.GoToNextItem()
 
+    def showTubeSelection(self, selection):
+        '''Shows a tube selection.
+
+        Args:
+            selection: an iterable of tube IDs.
+        '''
+        selectedTubeIndexes = list()
+        # Eh, this is efficient enough. If performance issues
+        # occur here, just make a datastructure mapping
+        # (tubeId -> tube block index) inside TubePolyManager.tubeBlocks().
+        it = self.tubePolyManager.tubeBlocks().NewTreeIterator()
+        it.SetVisitOnlyLeaves(False)
+        it.InitTraversal()
+        while not it.IsDoneWithTraversal():
+            tubeId = it.GetCurrentMetaData().Get(TUBE_ID_KEY)
+            if tubeId in selection:
+                selectedTubeIndexes.append(it.GetCurrentFlatIndex())
+            it.GoToNextItem()
+
+        self.window.vtkView().showTubeSelection(selectedTubeIndexes)
+
 class SegmentManager(QObject):
     '''Manager of tube segmentation.'''
 

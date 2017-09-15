@@ -266,6 +266,20 @@ class VTKViewer(QWidget):
         self.tubeProducer.Update()
         self.volumeView.GetRenderWindow().Render()
 
+    def showTubeSelection(self, tubeSelection):
+        '''Shows tube selections.
+
+        Args:
+            tubeSelection: an iterable of tube block indexes.
+        '''
+        cdda = vtk.vtkCompositeDataDisplayAttributes()
+        # default red
+        cdda.SetBlockColor(0, (1,0,0))
+        for index in tubeSelection:
+            cdda.SetBlockColor(index, (1,1,1))
+        self.tubeMapper.SetCompositeDataDisplayAttributes(cdda)
+        self.volumeView.GetRenderWindow().Render()
+
     def updateSlice(self, pos):
         '''Re-renders the slice with a new position.'''
         # z slice
