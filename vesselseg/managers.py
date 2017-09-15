@@ -92,6 +92,10 @@ class TubePolyManager(QObject):
 
         # str(hash(tube)) -> vtkPolyData
         self.tubePolys = dict()
+        # cached tube blocks
+        self._tubeBlocks = None
+        # determines if tube blocks need regeneration
+        self._tubeBlocksModified = True
 
     def updatePolyData(self, tubeGroup):
         '''Updates the polygonal data.'''
@@ -107,13 +111,16 @@ class TubePolyManager(QObject):
 
     def tubeBlocks(self):
         '''Generates a tube vtkMultiBlockDataSet.'''
-        blocks = vtk.vtkMultiBlockDataSet()
-        for tubeId in self.tubePolys:
-            poly = self.tubePolys[tubeId]
-            curIndex = blocks.GetNumberOfBlocks()
-            blocks.SetBlock(curIndex, poly)
-            blocks.GetMetaData(curIndex).Set(TUBE_ID_KEY, tubeId)
-        return blocks
+        if self._tubeBlocksModified:
+            self._tubeBlocksModified = False
+            blocks = vtk.vtkMultiBlockDataSet()
+            for tubeId in self.tubePolys:
+                poly = self.tubePolys[tubeId]
+                curIndex = blocks.GetNumberOfBlocks()
+                blocks.SetBlock(curIndex, poly)
+                blocks.GetMetaData(curIndex).Set(TUBE_ID_KEY, tubeId)
+            self._tubeBlocks = blocks
+        return self._tubeBlocks
 
     def _createTubePolyData(self, tube):
         '''Generates polydata from an itk.VesselTubeSpatialObject.'''
