@@ -20,6 +20,9 @@ class MainWindow(QMainWindow):
         self.createMenus()
         self.createActions()
 
+        self.statusLabel = QLabel(self)
+        self.statusBar().addWidget(self.statusLabel)
+
         self.openAction.triggered.connect(self.openFileDialog)
 
     def createMenus(self):
@@ -58,6 +61,13 @@ class MainWindow(QMainWindow):
         if self.progress:
             self.progress.close()
             self.progress = None
+
+    def showJobCount(self, count):
+        '''Shows job count.'''
+        if count == 0:
+            self.statusLabel.setText('')
+        else:
+            self.statusLabel.setText('Segmenting jobs: %d' % count)
 
     def show(self):
         '''Overridden show().

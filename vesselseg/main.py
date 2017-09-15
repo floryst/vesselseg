@@ -34,6 +34,8 @@ class VesselSegApp(QObject):
                 lambda _: self.tubeManager.reset())
         self.segmentManager.tubeSegmented.connect(
                 self.tubeManager.addSegmentedTube)
+        self.segmentManager.jobCountChanged.connect(
+                self.viewManager.showJobCount)
         self.tubeManager.tubesUpdated.connect(self.viewManager.displayTubes)
         self.tubeManager.tubeSelectionChanged.connect(
                 self.viewManager.showTubeSelection)
