@@ -52,11 +52,11 @@ class TubeManager(QObject):
         # segmentedGroup will be a child of tubeGroup
         self._segmentedGroup = None
 
-        self.reset()
-
         # map tubeId -> itk tube
         self.tubes = dict()
         self.tubeSelection = set()
+
+        self.reset()
 
     def tubeGroup(self):
         '''Getter for tube group.'''
