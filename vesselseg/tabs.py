@@ -88,6 +88,35 @@ class SegmentTab(QWidget):
         '''Checks if segmentation is enabled.'''
         return self.segmentBtn.isChecked()
 
+class SelectionTab(QWidget):
+    '''Shows tube selection.'''
+
+    COUNT_LABEL = 'Number of selected tubes: %d'
+
+    # signal: request deletion of current tube selection
+    wantTubeSelectionDeleted = pyqtSignal()
+
+    def __init__(self, parent=None):
+        super(SelectionTab, self).__init__(parent)
+
+        self.form = QFormLayout(self)
+
+        self.countLabel = QLabel(self.COUNT_LABEL % 0)
+        self.form.addWidget(self.countLabel)
+
+        self.deleteBtn = QPushButton('Delete selection')
+        self.form.addWidget(self.deleteBtn)
+
+        self.deleteBtn.clicked.connect(self.wantTubeSelectionDeleted)
+
+    def setTubeSelection(self, tubeSelection):
+        '''Sets the count of tubes.
+
+        Args:
+            tubeSelection: an iterable of selected tubes.
+        '''
+        self.countLabel.setText(self.COUNT_LABEL % len(tubeSelection))
+
 class InfoTab(QLabel):
     '''Info tab holds miscellaneous information.'''
 

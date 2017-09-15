@@ -25,6 +25,9 @@ class VesselSegApp(QObject):
         self.viewManager.fileSelected.connect(self.loadFile)
         self.viewManager.imageVoxelSelected.connect(self.segmentTube)
         self.viewManager.scaleChanged.connect(self.segmentManager.setScale)
+        self.viewManager.tubeSelected.connect(self.tubeManager.toggleSelection)
+        self.viewManager.wantTubeSelectionDeleted.connect(
+                self.tubeManager.deleteSelection)
         self.imageManager.imageLoaded.connect(self.viewManager.displayImage)
         self.imageManager.imageLoaded.connect(self.segmentManager.setImage)
         self.imageManager.imageLoaded.connect(
@@ -32,6 +35,8 @@ class VesselSegApp(QObject):
         self.segmentManager.tubeSegmented.connect(
                 self.tubeManager.addSegmentedTube)
         self.tubeManager.tubesUpdated.connect(self.viewManager.displayTubes)
+        self.tubeManager.tubeSelectionChanged.connect(
+                self.viewManager.showTubeSelection)
 
     def run(self):
         '''Runs the application.

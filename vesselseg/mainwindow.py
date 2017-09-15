@@ -1,7 +1,7 @@
 from PyQt4.QtGui import *
 from PyQt4.QtCore import Qt, pyqtSignal
 
-from tabs import InfoTab, SegmentTab
+from tabs import InfoTab, SegmentTab, SelectionTab
 from vtkviewer import VTKViewer
 
 class MainWindow(QMainWindow):
@@ -66,6 +66,10 @@ class MainWindow(QMainWindow):
         '''Getter for tube tree tab.'''
         return self.ui.tubeTreeTab
 
+    def selectionTabView(self):
+        '''Getter for selection tab.'''
+        return self.ui.selectionTab
+
 class Ui(QSplitter):
     def __init__(self, parent=None):
         super(Ui, self).__init__(Qt.Horizontal, parent)
@@ -78,6 +82,9 @@ class Ui(QSplitter):
 
         self.segmentTab = SegmentTab(self)
         self.tabs.addTab(self.segmentTab, 'Segment')
+
+        self.selectionTab = SelectionTab(self)
+        self.tabs.addTab(self.selectionTab, 'Selection')
 
         self.infoTab = InfoTab(self)
         self.tabs.addTab(self.infoTab, 'Info')
