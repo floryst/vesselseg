@@ -53,6 +53,8 @@ class TubeManager(QObject):
         self._segmentedGroup = itk.GroupSpatialObject[3].New()
         self._segmentedGroup.SetObjectName('Segmented Tubes')
 
+        # map tubeId -> itk tube
+        self.tubes = dict()
         self.tubeSelection = set()
 
     def tubeGroup(self):
@@ -61,11 +63,13 @@ class TubeManager(QObject):
 
     def addSegmentedTube(self, tube):
         '''Adds a segmented tube to the segmented tube set.'''
+        self.tubes[str(hash(tube))] = tube
         self._segmentedGroup.AddSpatialObject(tube)
         self.tubesUpdated.emit(self._tubeGroup)
 
     def reset(self):
         '''Resets the tube manager state.'''
+        self.tubes.clear()
         self._tubeGroup.Clear()
         self._segmentedGroup.Clear()
         self._tubeGroup.AddSpatialObject(self._segmentedGroup)
@@ -83,6 +87,17 @@ class TubeManager(QObject):
         else:
             self.tubeSelection.add(tubeId)
         self.tubeSelectionChanged.emit(self.tubeSelection)
+
+    def deleteSelection(self):
+        '''Deletes the current tube selection.'''
+        if len(self.tubeSelection) > 0:
+            for tubeId in self.tubeSelection:
+                tube = self.tubes[tubeId]
+                tube.GetParent().RemoveSpatialObject(tube)
+            self.tubeSelection.clear()
+
+            self.tubesUpdated.emit(self._tubeGroup)
+            self.tubeSelectionChanged.emit(self.tubeSelection)
 
 class TubePolyManager(QObject):
     '''Manager for tube poly data.'''
@@ -187,6 +202,8 @@ class ViewManager(QObject):
     imageVoxelSelected = pyqtSignal(float, float, float)
     # signal: a tube was selected
     tubeSelected = pyqtSignal(str)
+    # signal: request deletion of current tube selection
+    wantTubeSelectionDeleted = pyqtSignal()
 
     def __init__(self, window, parent=None):
         super(ViewManager, self).__init__(parent)
@@ -198,6 +215,8 @@ class ViewManager(QObject):
         self.window.vtkView().imageVoxelSelected.connect(self.imageVoxelSelected)
         self.window.vtkView().volumeBlockSelected.connect(self.pickTubeBlock)
         self.window.segmentTabView().scaleChanged.connect(self.scaleChanged)
+        self.window.selectionTabView().wantTubeSelectionDeleted.connect(
+                self.wantTubeSelectionDeleted)
 
     def displayImage(self, vtkImage):
         '''Displays a VTK ImageData to the UI.'''
@@ -256,6 +275,7 @@ class ViewManager(QObject):
             it.GoToNextItem()
 
         self.window.vtkView().showTubeSelection(selectedTubeIndexes)
+        self.window.selectionTabView().setTubeSelection(selection)
 
 class SegmentManager(QObject):
     '''Manager of tube segmentation.'''
