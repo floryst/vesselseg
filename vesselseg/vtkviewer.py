@@ -17,6 +17,7 @@ class SliceSlider(QWidget):
 
         self.sliceSlider = QSlider(Qt.Vertical, self)
         self.sliceSlider.setTickInterval(1)
+        self.sliceSlider.setRange(0, 0)
         self.vbox.addWidget(self.sliceSlider)
 
         self.sliceLabel = QLabel('-', self)

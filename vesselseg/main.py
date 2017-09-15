@@ -29,11 +29,13 @@ class VesselSegApp(QObject):
         self.viewManager.wantTubeSelectionDeleted.connect(
                 self.tubeManager.deleteSelection)
         self.imageManager.imageLoaded.connect(self.viewManager.displayImage)
-        self.imageManager.imageLoaded.connect(self.segmentManager.setImage)
+        self.imageManager.imageLoaded.connect(self.setSegmentImage)
         self.imageManager.imageLoaded.connect(
                 lambda _: self.tubeManager.reset())
         self.segmentManager.tubeSegmented.connect(
                 self.tubeManager.addSegmentedTube)
+        self.segmentManager.jobCountChanged.connect(
+                self.viewManager.showJobCount)
         self.tubeManager.tubesUpdated.connect(self.viewManager.displayTubes)
         self.tubeManager.tubeSelectionChanged.connect(
                 self.viewManager.showTubeSelection)
@@ -53,6 +55,12 @@ class VesselSegApp(QObject):
             return
         else:
             self.viewManager.alert('File %s could not opened' % filename)
+
+    def setSegmentImage(self, vtkImageData):
+        '''Sets the segment image and displays a progress modal.'''
+        self.viewManager.showProgress('Prepping image for segmentation...')
+        self.segmentManager.setImage(vtkImageData)
+        self.viewManager.closeProgress()
 
     def segmentTube(self, x, y, z):
         if self.viewManager.isSegmentEnabled():

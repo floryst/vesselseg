@@ -238,6 +238,14 @@ class ViewManager(QObject):
         '''Alerts the user with some message.'''
         self.window.popupMessage(message)
 
+    def showProgress(self, message):
+        '''Shows an indeterminate progress bar.'''
+        self.window.showProgress(message)
+
+    def closeProgress(self):
+        '''Closes progress bar.'''
+        self.window.closeProgress()
+
     def setSegmentScale(self, scale):
         '''Updates view with scale.'''
         self.window.segmentTabView().setScale(scale)
@@ -245,6 +253,10 @@ class ViewManager(QObject):
     def isSegmentEnabled(self):
         '''Getter for segment button toggle state.'''
         return self.window.segmentTabView().isSegmentEnabled()
+
+    def showJobCount(self, count):
+        '''Shows segment job count.'''
+        self.window.showJobCount(count)
 
     def pickTubeBlock(self, blockIndex):
         '''Picks out the clicked tube.'''
@@ -286,11 +298,14 @@ class SegmentManager(QObject):
     DEFAULT_SCALE = 2.0
 
     tubeSegmented = pyqtSignal(itk.VesselTubeSpatialObject[3])
+    segmentationErrored = pyqtSignal(Exception)
+    jobCountChanged = pyqtSignal(int)
 
     def __init__(self, parent=None):
         super(SegmentManager, self).__init__(parent)
 
         self._scale = self.DEFAULT_SCALE
+        self._jobCount = 0
 
         self.worker = SegmentWorker()
         self.workerThread = QThread()
@@ -300,6 +315,7 @@ class SegmentManager(QObject):
         self.workerThread.started.connect(self.worker.run)
 
         self.worker.jobFinished.connect(self.processSegmentResult)
+        self.worker.jobFailed.connect(self.segmentationFailed)
 
         self.workerThread.start()
 
@@ -322,6 +338,9 @@ class SegmentManager(QObject):
 
     def segmentTube(self, x, y, z):
         '''Segments a tube at (x, y, z).'''
+        self._jobCount += 1
+        self.jobCountChanged.emit(self._jobCount)
+
         args = SegmentArgs()
         args.scale = self.scale()
         args.coords = (x, y, z)
@@ -329,5 +348,13 @@ class SegmentManager(QObject):
 
     def processSegmentResult(self, result):
         '''Handles segment results.'''
+        self._jobCount -= 1
+        self.jobCountChanged.emit(self._jobCount)
         if result.tube:
             self.tubeSegmented.emit(result.tube)
+
+    def segmentationFailed(self, exc):
+        '''Segmentation failed.'''
+        self._jobCount -= 1
+        self.jobCountChanged.emit(self._jobCount)
+        self.segmentationErrored.emit(exc)

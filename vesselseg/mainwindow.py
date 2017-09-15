@@ -15,8 +15,13 @@ class MainWindow(QMainWindow):
         self.ui = Ui(self)
         self.setCentralWidget(self.ui)
 
+        self.progress = None
+
         self.createMenus()
         self.createActions()
+
+        self.statusLabel = QLabel(self)
+        self.statusBar().addWidget(self.statusLabel)
 
         self.openAction.triggered.connect(self.openFileDialog)
 
@@ -41,6 +46,28 @@ class MainWindow(QMainWindow):
         msgbox = QMessageBox()
         msgbox.setText(message)
         msgbox.exec_()
+
+    def showProgress(self, message):
+        '''Shows an indeterminate progress bar.'''
+        self.progress = QProgressDialog(self)
+        self.progress.setMinimum(0)
+        self.progress.setMaximum(0)
+        self.progress.setLabel(QLabel(message, self.progress))
+        self.progress.show()
+        QApplication.processEvents()
+
+    def closeProgress(self):
+        '''Closes progress bar.'''
+        if self.progress:
+            self.progress.close()
+            self.progress = None
+
+    def showJobCount(self, count):
+        '''Shows job count.'''
+        if count == 0:
+            self.statusLabel.setText('')
+        else:
+            self.statusLabel.setText('Segmenting jobs: %d' % count)
 
     def show(self):
         '''Overridden show().
