@@ -25,6 +25,7 @@ class VesselSegApp(QObject):
         self.viewManager.fileSelected.connect(self.loadFile)
         self.viewManager.imageVoxelSelected.connect(self.segmentTube)
         self.viewManager.scaleChanged.connect(self.segmentManager.setScale)
+        self.viewManager.tubeSelected.connect(self.tubeManager.toggleSelection)
         self.imageManager.imageLoaded.connect(self.viewManager.displayImage)
         self.imageManager.imageLoaded.connect(self.segmentManager.setImage)
         self.imageManager.imageLoaded.connect(

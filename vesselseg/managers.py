@@ -42,6 +42,8 @@ class TubeManager(QObject):
 
     # signal: stored tubes were updated
     tubesUpdated = pyqtSignal(itk.GroupSpatialObject[3])
+    # signal: tube selection changed
+    tubeSelectionChanged = pyqtSignal(set)
 
     def __init__(self, parent=None):
         super(TubeManager, self).__init__(parent)
@@ -50,6 +52,8 @@ class TubeManager(QObject):
         # segmentedGroup will be a child of tubeGroup
         self._segmentedGroup = itk.GroupSpatialObject[3].New()
         self._segmentedGroup.SetObjectName('Segmented Tubes')
+
+        self.tubeSelection = set()
 
     def tubeGroup(self):
         '''Getter for tube group.'''
@@ -65,6 +69,20 @@ class TubeManager(QObject):
         self._tubeGroup.Clear()
         self._segmentedGroup.Clear()
         self._tubeGroup.AddSpatialObject(self._segmentedGroup)
+
+    def toggleSelection(self, tubeId):
+        '''Toggles the selection of a tube.
+
+        Args:
+            tubeId: the tube ID for which to toggle selection.
+        '''
+        # convert qstring to python str
+        tubeId = str(tubeId)
+        if tubeId in self.tubeSelection:
+            self.tubeSelection.remove(tubeId)
+        else:
+            self.tubeSelection.add(tubeId)
+        self.tubeSelectionChanged.emit(self.tubeSelection)
 
 class TubePolyManager(QObject):
     '''Manager for tube poly data.'''
