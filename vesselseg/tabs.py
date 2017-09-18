@@ -111,10 +111,10 @@ class SegmentTab(QWidget):
             self.setScale(scale)
 
     def onSegmentBtnClicked(self):
-        self.segmentEnabled.emit(self.segmentBtn.isChecked()))
+        self.segmentEnabled.emit(self.segmentBtn.isChecked())
 
     def onScaleInputChanged(self, text):
-        self.scaleChanged.emit(float(s or 0)))
+        self.scaleChanged.emit(float(s or 0))
 
     def isSegmentEnabled(self):
         '''Checks if segmentation is enabled.'''

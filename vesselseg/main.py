@@ -69,7 +69,7 @@ class VesselSegApp(QObject):
 
     def resetTubeManager(self, _):
         '''Resets tube manager.'''
-        self.tubeManager.reset())
+        self.tubeManager.reset()
 
 if __name__ == '__main__':
     app = VesselSegApp()
