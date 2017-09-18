@@ -67,7 +67,8 @@ class VTKViewer(QWidget):
 
         def onLeftButtonUp(self, istyle, event):
             evX, evY = istyle.GetInteractor().GetEventPosition()
-            if evX == self.clickX and evY == self.clickY:
+            vec = QPoint(evX-self.clickX, evY-self.clickY)
+            if vec.manhattanLength() < 3:
                 self.InvokeEvent('LeftButtonClickEvent')
             self.OnLeftButtonUp()
 
@@ -86,7 +87,8 @@ class VTKViewer(QWidget):
 
         def onLeftButtonUp(self, istyle, event):
             evX, evY = istyle.GetInteractor().GetEventPosition()
-            if evX == self.clickX and evY == self.clickY:
+            vec = QPoint(evX-self.clickX, evY-self.clickY)
+            if vec.manhattanLength() < 3:
                 self.InvokeEvent('LeftButtonClickEvent')
             self.OnLeftButtonUp()
 
