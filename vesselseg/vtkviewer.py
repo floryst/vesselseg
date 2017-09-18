@@ -182,7 +182,7 @@ class VTKViewer(QWidget):
 
         # compute transformation
         self.image2worldTransform.Identity()
-        self.image2worldTransform.PostMultiply()
+        self.image2worldTransform.PreMultiply()
         self.image2worldTransform.Translate(vtkImageData.GetOrigin())
         self.image2worldTransform.Scale(vtkImageData.GetSpacing())
 

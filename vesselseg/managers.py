@@ -91,7 +91,10 @@ class TubeManager(QObject):
     def addSegmentedTube(self, tube):
         '''Adds a segmented tube to the segmented tube set.'''
         self.tubes[str(hash(tube))] = tube
-        self._segmentedGroup.AddSpatialObject(tube)
+        if not self._segmentedGroup:
+            self._segmentedGroup = tube.GetParent()
+            self._segmentedGroup.SetObjectName('Segmented Tubes')
+            self._tubeGroup.AddSpatialObject(self._segmentedGroup)
         self.tubesUpdated.emit(self._tubeGroup)
 
     def importTubeGroup(self, group):
@@ -105,9 +108,7 @@ class TubeManager(QObject):
         '''Resets the tube manager state.'''
         self.tubes.clear()
         self._tubeGroup = itk.GroupSpatialObject[3].New()
-        self._segmentedGroup = itk.GroupSpatialObject[3].New()
-        self._segmentedGroup.SetObjectName('Segmented Tubes')
-        self._tubeGroup.AddSpatialObject(self._segmentedGroup)
+        self._segmentedGroup = None
         self.tubesUpdated.emit(self._tubeGroup)
 
     def toggleSelection(self, tubeId):
