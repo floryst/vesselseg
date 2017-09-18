@@ -22,6 +22,7 @@ class VesselSegApp(QObject):
 
         self.viewManager.setSegmentScale(self.segmentManager.scale())
 
+        self.window.closed.connect(self.teardown)
         self.viewManager.fileSelected.connect(self.loadFile)
         self.viewManager.imageVoxelSelected.connect(self.segmentTube)
         self.viewManager.scaleChanged.connect(self.segmentManager.setScale)
@@ -49,6 +50,10 @@ class VesselSegApp(QObject):
         '''
         self.window.show()
         return self.qapp.exec_()
+
+    def teardown(self):
+        '''Tear down application.'''
+        self.segmentManager.stop()
 
     def loadFile(self, qfilename):
         filename = qfilename.toLatin1().data()
