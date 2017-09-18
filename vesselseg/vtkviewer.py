@@ -159,7 +159,7 @@ class VTKViewer(QWidget):
         picker.AddPickList(self.tubeActor)
 
     def onSliceClicked(self, istyle, event):
-        '''Slick click callback'''
+        '''Slice click callback'''
         clickX, clickY = istyle.GetInteractor().GetEventPosition()
         picker = vtk.vtkCellPicker()
         if picker.Pick(clickX, clickY, 0, self.sliceRenderer):
