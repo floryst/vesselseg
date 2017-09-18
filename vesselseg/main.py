@@ -28,6 +28,8 @@ class VesselSegApp(QObject):
         self.viewManager.tubeSelected.connect(self.tubeManager.toggleSelection)
         self.viewManager.wantTubeSelectionDeleted.connect(
                 self.tubeManager.deleteSelection)
+        self.viewManager.wantTubeSelectionCleared.connect(
+                self.tubeManager.clearSelection)
         self.imageManager.imageLoaded.connect(self.viewManager.displayImage)
         self.imageManager.imageLoaded.connect(self.setSegmentImage)
         self.imageManager.imageLoaded.connect(self.resetTubeManager)
