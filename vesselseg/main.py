@@ -30,8 +30,7 @@ class VesselSegApp(QObject):
                 self.tubeManager.deleteSelection)
         self.imageManager.imageLoaded.connect(self.viewManager.displayImage)
         self.imageManager.imageLoaded.connect(self.setSegmentImage)
-        self.imageManager.imageLoaded.connect(
-                lambda _: self.tubeManager.reset())
+        self.imageManager.imageLoaded.connect(self.resetTubeManager)
         self.segmentManager.tubeSegmented.connect(
                 self.tubeManager.addSegmentedTube)
         self.segmentManager.jobCountChanged.connect(
@@ -67,6 +66,10 @@ class VesselSegApp(QObject):
     def segmentTube(self, x, y, z):
         if self.viewManager.isSegmentEnabled():
             self.segmentManager.segmentTube(x, y, z)
+
+    def resetTubeManager(self, _):
+        '''Resets tube manager.'''
+        self.tubeManager.reset())
 
 if __name__ == '__main__':
     app = VesselSegApp()

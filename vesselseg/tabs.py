@@ -88,10 +88,8 @@ class SegmentTab(QWidget):
         spacer = QSpacerItem(40, 20, QSizePolicy.Minimum, QSizePolicy.Expanding)
         self.grid.addItem(spacer, 2, 0)
 
-        self.segmentBtn.clicked.connect(
-                lambda: self.segmentEnabled.emit(self.segmentBtn.isChecked()))
-        self.scaleInput.textChanged.connect(
-                lambda s: self.scaleChanged.emit(float(s or 0)))
+        self.segmentBtn.clicked.connect(self.onSegmentBtnClicked)
+        self.scaleInput.textChanged.connect(self.onScaleInputChanged)
         self.scaleCombo.activated.connect(self.setScalePreset)
 
     def setScale(self, scale):
@@ -111,6 +109,12 @@ class SegmentTab(QWidget):
         else:
             self.scaleInput.setEnabled(False)
             self.setScale(scale)
+
+    def onSegmentBtnClicked(self):
+        self.segmentEnabled.emit(self.segmentBtn.isChecked()))
+
+    def onScaleInputChanged(self, text):
+        self.scaleChanged.emit(float(s or 0)))
 
     def isSegmentEnabled(self):
         '''Checks if segmentation is enabled.'''
