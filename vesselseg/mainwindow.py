@@ -8,6 +8,8 @@ class MainWindow(QMainWindow):
 
     # signal: file was selected for loading
     fileSelected = pyqtSignal(str)
+    # signal: window was closed
+    closed = pyqtSignal()
 
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
@@ -33,6 +35,10 @@ class MainWindow(QMainWindow):
         self.openAction = QAction('&Open', self)
         self.openAction.setShortcut('Ctrl+O')
         self.fileMenu.addAction(self.openAction)
+
+    def closeEvent(self, event):
+        '''Called when window is closed.'''
+        self.closed.emit()
 
     def openFileDialog(self):
         '''Opens a file dialog prompt.'''

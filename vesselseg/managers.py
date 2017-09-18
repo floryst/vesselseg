@@ -381,6 +381,11 @@ class SegmentManager(QObject):
 
         self.workerThread.start()
 
+    def stop(self):
+        self.worker.stop()
+        self.workerThread.quit()
+        self.workerThread.wait()
+
     def scale(self):
         '''Getter for scale.'''
         return self._scale
