@@ -7,7 +7,7 @@ import itk
 from vtk.util import keys
 
 from segmenttubes import SegmentWorker, SegmentArgs, TubeIterator, GetTubePoints
-from models import TubeTreeViewModel
+from models import TubeTreeViewModel, RAW_DATA_ROLE
 
 TUBE_ID_KEY = keys.MakeKey(keys.StringKey, 'tube.id', '')
 
@@ -253,6 +253,7 @@ class ViewManager(QObject):
         self.window.segmentTabView().scaleChanged.connect(self.scaleChanged)
         self.window.selectionTabView().wantTubeSelectionDeleted.connect(
                 self.wantTubeSelectionDeleted)
+        self.window.tubeTreeTabView().wantSaveTubes.connect(self.saveTubes)
 
     def displayImage(self, vtkImage):
         '''Displays a VTK ImageData to the UI.'''
@@ -324,6 +325,24 @@ class ViewManager(QObject):
 
         self.window.vtkView().showTubeSelection(selectedTubeIndexes)
         self.window.selectionTabView().setTubeSelection(selection)
+
+    def saveTubes(self, selection, filename):
+        dim = 3
+        model = self.window.tubeTreeTabView().model()
+        tubes = [model.data(index, RAW_DATA_ROLE) for index in selection]
+
+        if len(tubes) > 1:
+            # create a tube group to hold the selection.
+            group = itk.GroupSpatialObject[dim].New()
+            for tube in tubes:
+                group.AddSpatialObject(tube)
+        else:
+            group = tubes[0]
+
+        writer = itk.SpatialObjectWriter[dim].New()
+        writer.SetFileName(filename.toLatin1().data())
+        writer.SetInput(group)
+        writer.Update()
 
 class SegmentManager(QObject):
     '''Manager of tube segmentation.'''
