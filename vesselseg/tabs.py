@@ -127,6 +127,8 @@ class SelectionTab(QWidget):
 
     # signal: request deletion of current tube selection
     wantTubeSelectionDeleted = pyqtSignal()
+    # signal: request clearing of current tube selection
+    wantTubeSelectionCleared = pyqtSignal()
 
     def __init__(self, parent=None):
         super(SelectionTab, self).__init__(parent)
@@ -139,7 +141,11 @@ class SelectionTab(QWidget):
         self.deleteBtn = QPushButton('Delete selection')
         self.form.addWidget(self.deleteBtn)
 
+        self.clearBtn = QPushButton('Clear selection')
+        self.form.addWidget(self.clearBtn)
+
         self.deleteBtn.clicked.connect(self.wantTubeSelectionDeleted)
+        self.clearBtn.clicked.connect(self.wantTubeSelectionCleared)
 
     def setTubeSelection(self, tubeSelection):
         '''Sets the count of tubes.
