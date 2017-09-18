@@ -1,4 +1,4 @@
-from PyQt4.QtCore import Qt, pyqtSignal
+from PyQt4.QtCore import Qt, pyqtSignal, QPoint
 from PyQt4.QtGui import *
 
 METADATA_TEMPLATE = \
@@ -11,8 +11,36 @@ METADATA_TEMPLATE = \
 class TubeTreeTab(QTreeView):
     '''Tube tree tab displays tubes in tree view.'''
 
+    # signal: defer tube saving to a non-view componetn
+    wantSaveTubes = pyqtSignal(list, str)
+
     def __init__(self, parent=None):
         super(TubeTreeTab, self).__init__(parent)
+
+        self.setSelectionMode(QAbstractItemView.ExtendedSelection)
+
+        self.saveAction = QAction('Save tube(s)...', self)
+
+        self.contextMenu = QMenu(self)
+        self.contextMenu.addAction(self.saveAction)
+
+        self.saveAction.triggered.connect(self.saveTubes)
+
+    def contextMenuEvent(self, event):
+        '''Opens a context menu.'''
+        index = self.indexAt(QPoint(event.x(), event.y()))
+        if index.isValid():
+            self.contextMenu.exec_(QPoint(event.globalX(), event.globalY()))
+
+    def saveTubes(self):
+        '''Save selected tubes.'''
+        selection = self.selectionModel().selectedIndexes()
+        if len(selection):
+            ext = '.tre'
+            filename = QFileDialog.getSaveFileName(
+                    self, 'Save File', '', ext)
+            if filename:
+                self.wantSaveTubes.emit(selection, str(filename + ext))
 
 class SegmentTab(QWidget):
     '''Segment tab holds parameter inputs for segmentation.'''

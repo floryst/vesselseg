@@ -265,6 +265,7 @@ class VTKViewer(QWidget):
 
         self.tubeProducer.SetOutput(tubeBlocks)
         self.tubeProducer.Update()
+        self.volumeRenderer.ResetCamera()
         self.volumeView.GetRenderWindow().Render()
 
     def showTubeSelection(self, tubeSelection):

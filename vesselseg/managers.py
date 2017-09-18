@@ -1,3 +1,5 @@
+import os
+
 from PyQt4.QtCore import QThread, QObject, pyqtSignal
 
 import vtk
@@ -5,7 +7,7 @@ import itk
 from vtk.util import keys
 
 from segmenttubes import SegmentWorker, SegmentArgs, TubeIterator, GetTubePoints
-from models import TubeTreeViewModel
+from models import TubeTreeViewModel, RAW_DATA_ROLE
 
 TUBE_ID_KEY = keys.MakeKey(keys.StringKey, 'tube.id', '')
 
@@ -62,10 +64,41 @@ class TubeManager(QObject):
         '''Getter for tube group.'''
         return self._tubeGroup
 
+    def loadTubes(self, filename):
+        '''Tries to load a given tube file.
+
+        Returns:
+            Boolean if  the file was loaded successfully.
+        '''
+        dim = 3
+        reader = itk.SpatialObjectReader[dim].New()
+        reader.SetFileName(filename)
+        try:
+            reader.Update()
+        except RuntimeError:
+            pass
+        else:
+            tubeGroup = reader.GetGroup()
+            if tubeGroup:
+                # Set group name here so importTubeGroup() doesn't have to deal
+                # with naming.
+                basename = os.path.basename(filename)
+                tubeGroup.SetObjectName('Imported tubes (%s)' % basename)
+                self.importTubeGroup(tubeGroup)
+                return True
+        return False
+
     def addSegmentedTube(self, tube):
         '''Adds a segmented tube to the segmented tube set.'''
         self.tubes[str(hash(tube))] = tube
         self._segmentedGroup.AddSpatialObject(tube)
+        self.tubesUpdated.emit(self._tubeGroup)
+
+    def importTubeGroup(self, group):
+        '''Adds a whole tube group as imported tubes.'''
+        for tube in TubeIterator(group):
+            self.tubes[str(hash(tube))] = tube
+        self._tubeGroup.AddSpatialObject(group)
         self.tubesUpdated.emit(self._tubeGroup)
 
     def reset(self):
@@ -220,6 +253,7 @@ class ViewManager(QObject):
         self.window.segmentTabView().scaleChanged.connect(self.scaleChanged)
         self.window.selectionTabView().wantTubeSelectionDeleted.connect(
                 self.wantTubeSelectionDeleted)
+        self.window.tubeTreeTabView().wantSaveTubes.connect(self.saveTubes)
 
     def displayImage(self, vtkImage):
         '''Displays a VTK ImageData to the UI.'''
@@ -291,6 +325,24 @@ class ViewManager(QObject):
 
         self.window.vtkView().showTubeSelection(selectedTubeIndexes)
         self.window.selectionTabView().setTubeSelection(selection)
+
+    def saveTubes(self, selection, filename):
+        dim = 3
+        model = self.window.tubeTreeTabView().model()
+        tubes = [model.data(index, RAW_DATA_ROLE) for index in selection]
+
+        if len(tubes) > 1:
+            # create a tube group to hold the selection.
+            group = itk.GroupSpatialObject[dim].New()
+            for tube in tubes:
+                group.AddSpatialObject(tube)
+        else:
+            group = tubes[0]
+
+        writer = itk.SpatialObjectWriter[dim].New()
+        writer.SetFileName(filename.toLatin1().data())
+        writer.SetInput(group)
+        writer.Update()
 
 class SegmentManager(QObject):
     '''Manager of tube segmentation.'''
