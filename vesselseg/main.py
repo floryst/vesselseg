@@ -56,19 +56,22 @@ class VesselSegApp(QObject):
         self.segmentManager.stop()
 
     def loadFile(self, qfilename):
+        progress = self.viewManager.makeProgressDialog('Loading image...')
         filename = qfilename.toLatin1().data()
         if self.imageManager.loadImage(filename):
-            return
+            pass
         elif self.tubeManager.loadTubes(filename):
-            return
+            pass
         else:
             self.viewManager.alert('File %s could not opened' % filename)
+        progress.close()
 
     def setSegmentImage(self, vtkImageData):
         '''Sets the segment image and displays a progress modal.'''
-        self.viewManager.showProgress('Prepping image for segmentation...')
+        progress = self.viewManager.makeProgressDialog(
+                'Prepping image for segmentation...')
         self.segmentManager.setImage(vtkImageData)
-        self.viewManager.closeProgress()
+        progress.close()
 
     def segmentTube(self, x, y, z):
         if self.viewManager.isSegmentEnabled():

@@ -282,13 +282,9 @@ class ViewManager(QObject):
         '''Alerts the user with some message.'''
         self.window.popupMessage(message)
 
-    def showProgress(self, message):
-        '''Shows an indeterminate progress bar.'''
-        self.window.showProgress(message)
-
-    def closeProgress(self):
-        '''Closes progress bar.'''
-        self.window.closeProgress()
+    def makeProgressDialog(self, message):
+        '''Returns an indeterminate progress bar.'''
+        return self.window.makeProgressDialog(message)
 
     def setSegmentScale(self, scale):
         '''Updates view with scale.'''

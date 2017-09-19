@@ -17,8 +17,6 @@ class MainWindow(QMainWindow):
         self.ui = Ui(self)
         self.setCentralWidget(self.ui)
 
-        self.progress = None
-
         self.createMenus()
         self.createActions()
 
@@ -53,20 +51,15 @@ class MainWindow(QMainWindow):
         msgbox.setText(message)
         msgbox.exec_()
 
-    def showProgress(self, message):
-        '''Shows an indeterminate progress bar.'''
-        self.progress = QProgressDialog(self)
-        self.progress.setMinimum(0)
-        self.progress.setMaximum(0)
-        self.progress.setLabel(QLabel(message, self.progress))
-        self.progress.show()
+    def makeProgressDialog(self, message):
+        '''Returns an indeterminate progress bar.'''
+        progress = QProgressDialog(self)
+        progress.setMinimum(0)
+        progress.setMaximum(0)
+        progress.setLabel(QLabel(message, progress))
+        progress.show()
         QApplication.processEvents()
-
-    def closeProgress(self):
-        '''Closes progress bar.'''
-        if self.progress:
-            self.progress.close()
-            self.progress = None
+        return progress
 
     def showJobCount(self, count):
         '''Shows job count.'''
