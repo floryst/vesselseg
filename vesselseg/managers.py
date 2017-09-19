@@ -141,6 +141,11 @@ class TubeManager(QObject):
         self.tubeSelection.clear()
         self.tubeSelectionChanged.emit(self.tubeSelection)
 
+    def selectAllTubes(self):
+        '''Selects all tubes.'''
+        self.tubeSelection.update(self.tubes)
+        self.tubeSelectionChanged.emit(self.tubeSelection)
+
 class TubePolyManager(QObject):
     '''Manager for tube poly data.'''
 
@@ -248,6 +253,8 @@ class ViewManager(QObject):
     wantTubeSelectionDeleted = pyqtSignal()
     # signal: request clearing of current tube selection
     wantTubeSelectionCleared = pyqtSignal()
+    # signal: request selecting of all tubes
+    wantAllTubesSelected = pyqtSignal()
 
     def __init__(self, window, parent=None):
         super(ViewManager, self).__init__(parent)
@@ -263,6 +270,8 @@ class ViewManager(QObject):
                 self.wantTubeSelectionDeleted)
         self.window.selectionTabView().wantTubeSelectionCleared.connect(
                 self.wantTubeSelectionCleared)
+        self.window.selectionTabView().wantAllTubesSelected.connect(
+                self.wantAllTubesSelected)
         self.window.tubeTreeTabView().wantSaveTubes.connect(self.saveTubes)
 
     def displayImage(self, vtkImage):
