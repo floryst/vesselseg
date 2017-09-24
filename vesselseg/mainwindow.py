@@ -103,11 +103,14 @@ class Ui(QSplitter):
         self.tabs = QTabWidget(self)
         self.addWidget(self.tabs)
 
-        self.tubeTreeTab = TubeTreeTab(self)
-        self.tabs.addTab(self.tubeTreeTab, 'Tubes')
+        self.segmentBox = QToolBox(self)
+        self.tabs.addTab(self.segmentBox, 'Segment')
 
         self.segmentTab = SegmentTab(self)
-        self.tabs.addTab(self.segmentTab, 'Segment')
+        self.segmentBox.addItem(self.segmentTab, "1. Segment")
+
+        self.tubeTreeTab = TubeTreeTab(self)
+        self.tabs.addTab(self.tubeTreeTab, 'Tubes')
 
         self.selectionTab = SelectionTab(self)
         self.tabs.addTab(self.selectionTab, 'Selection')
