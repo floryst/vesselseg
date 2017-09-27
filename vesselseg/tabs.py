@@ -42,6 +42,30 @@ class TubeTreeTab(QTreeView):
             if filename:
                 self.wantSaveTubes.emit(selection, str(filename + ext))
 
+class FiltersTab(QWidget):
+    '''Filters tab holds options for preprocessing the segment image.'''
+
+    # signal: window/level filter changed (enabled)
+    windowLevelFilterChanged = pyqtSignal(bool)
+
+    def __init__(self, parent=None):
+        super(FiltersTab, self).__init__(parent)
+
+        self.layout = QVBoxLayout(self)
+        self.setLayout(self.layout)
+
+        self.windowLevelCheckbox = QCheckBox('Window/Level filter', self)
+        self.layout.addWidget(self.windowLevelCheckbox)
+
+        spacer = QSpacerItem(40, 20, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.layout.addItem(spacer)
+
+        self.windowLevelCheckbox.stateChanged.connect(
+                self.windowLevelStateChanged)
+
+    def windowLevelStateChanged(self, state):
+        self.windowLevelFilterChanged.emit(bool(state))
+
 class SegmentTab(QWidget):
     '''Segment tab holds parameter inputs for segmentation.'''
 
