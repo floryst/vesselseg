@@ -139,6 +139,7 @@ class TubeManager(QObject):
             for tubeId in self.tubeSelection:
                 tube = self.tubes[tubeId]
                 tube.GetParent().RemoveSpatialObject(tube)
+                del self.tubes[tubeId]
             self.tubeSelection.clear()
 
             self.tubesUpdated.emit(self._tubeGroup)
