@@ -51,6 +51,8 @@ class VTKViewer(QWidget):
     imageVoxelSelected = pyqtSignal(float, float, float)
     # signal: a block was selected in volume renderer
     volumeBlockSelected = pyqtSignal(int)
+    # signal: window/level changed. Values are between [0,1]
+    windowLevelChanged = pyqtSignal(float, float)
 
     class ClickInteractorStyleImage(vtk.vtkInteractorStyleImage):
         '''Listens for click events and invokes LeftButtonClickEvent.'''
@@ -145,6 +147,9 @@ class VTKViewer(QWidget):
         irenVolume.Start()
 
         istyleSlice.AddObserver('LeftButtonClickEvent', self.onSliceClicked)
+        # window level is changed after mouse is released
+        istyleSlice.AddObserver('LeftButtonReleaseEvent',
+                self.onWindowLevelChange)
         istyleVolume.AddObserver('LeftButtonClickEvent', self.onVolumeClicked)
 
         # set up tube actor
@@ -173,6 +178,14 @@ class VTKViewer(QWidget):
         picker = istyle.GetInteractor().GetPicker()
         if picker.Pick(clickX, clickY, 0, self.volumeRenderer):
             self.volumeBlockSelected.emit(picker.GetFlatBlockIndex())
+
+    def onWindowLevelChange(self, istyle, event):
+        '''Callback when the VTK image window level changes.'''
+        imageProp = istyle.GetCurrentImageProperty()
+        if imageProp:
+            # TODO handle case when user pressing "R/r" resets the window/level
+            window, level = imageProp.GetColorWindow(), imageProp.GetColorLevel()
+            self.windowLevelChanged.emit(window/255.0, level/255.0)
 
     def displayImage(self, vtkImageData):
         '''Updates viewer with a new image.'''
