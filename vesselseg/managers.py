@@ -91,10 +91,16 @@ class TubeManager(QObject):
     def addSegmentedTube(self, tube):
         '''Adds a segmented tube to the segmented tube set.'''
         self.tubes[str(hash(tube))] = tube
-        if not self._segmentedGroup:
-            self._segmentedGroup = tube.GetParent()
-            self._segmentedGroup.SetObjectName('Segmented Tubes')
-            self._tubeGroup.AddSpatialObject(self._segmentedGroup)
+        group = tube.GetParent()
+
+        # replace the current segment group with new one
+        # also copy over transform info
+        children = group.GetChildren()
+        transform = group.GetObjectToWorldTransform()
+        self._segmentedGroup.GetTreeNode().SetData(group)
+        self._segmentedGroup.SetObjectToWorldTransform(transform)
+        self._segmentedGroup.SetChildren(children)
+
         self.tubesUpdated.emit(self._tubeGroup)
 
     def importTubeGroup(self, group):
@@ -108,7 +114,9 @@ class TubeManager(QObject):
         '''Resets the tube manager state.'''
         self.tubes.clear()
         self._tubeGroup = itk.GroupSpatialObject[3].New()
-        self._segmentedGroup = None
+        self._segmentedGroup = itk.GroupSpatialObject[3].New()
+        self._segmentedGroup.SetObjectName('Segmented Tubes')
+        self._tubeGroup.AddSpatialObject(self._segmentedGroup)
         self.tubesUpdated.emit(self._tubeGroup)
 
     def toggleSelection(self, tubeId):
@@ -255,6 +263,10 @@ class ViewManager(QObject):
     wantTubeSelectionCleared = pyqtSignal()
     # signal: request selecting of all tubes
     wantAllTubesSelected = pyqtSignal()
+    # signal: window/level changed on vtkviewer
+    windowLevelChanged = pyqtSignal(float, float)
+    # signal: window/level filter state changed
+    windowLevelFilterChanged = pyqtSignal(bool)
 
     def __init__(self, window, parent=None):
         super(ViewManager, self).__init__(parent)
@@ -265,6 +277,7 @@ class ViewManager(QObject):
         self.window.fileSelected.connect(self.fileSelected)
         self.window.vtkView().imageVoxelSelected.connect(self.imageVoxelSelected)
         self.window.vtkView().volumeBlockSelected.connect(self.pickTubeBlock)
+        self.window.vtkView().windowLevelChanged.connect(self.windowLevelChanged)
         self.window.segmentTabView().scaleChanged.connect(self.scaleChanged)
         self.window.selectionTabView().wantTubeSelectionDeleted.connect(
                 self.wantTubeSelectionDeleted)
@@ -273,6 +286,8 @@ class ViewManager(QObject):
         self.window.selectionTabView().wantAllTubesSelected.connect(
                 self.wantAllTubesSelected)
         self.window.tubeTreeTabView().wantSaveTubes.connect(self.saveTubes)
+        self.window.filtersTabView().windowLevelFilterChanged.connect(
+                self.windowLevelFilterChanged)
 
     def displayImage(self, vtkImage):
         '''Displays a VTK ImageData to the UI.'''
@@ -408,6 +423,10 @@ class SegmentManager(QObject):
         '''Sets segmenting image.'''
         self.worker.setImage(vtkImageData)
 
+    def setWindowLevel(self, enabled, window, level):
+        '''Sets window and level for image.'''
+        self.worker.setWindowLevel(enabled, window, level)
+
     def segmentTube(self, x, y, z):
         '''Segments a tube at (x, y, z).'''
         self._jobCount += 1
@@ -430,3 +449,27 @@ class SegmentManager(QObject):
         self._jobCount -= 1
         self.jobCountChanged.emit(self._jobCount)
         self.segmentationErrored.emit(exc)
+
+class FilterManager(QObject):
+    '''Manages filter parameters.'''
+
+    # signal: Window/Level params changed
+    windowLevelChanged = pyqtSignal(bool, float, float)
+
+    def __init__(self, parent=None):
+        super(FilterManager, self).__init__(parent)
+
+        self.window, self.level = 1, 0.5
+        self.windowLevelEnabled = False
+
+    def toggleWindowLevel(self, enabled):
+        '''Toggles window/level filter.'''
+        self.windowLevelEnabled = enabled
+        self.windowLevelChanged.emit(
+                self.windowLevelEnabled, self.window, self.level)
+
+    def setWindowLevel(self, window, level):
+        self.window = window
+        self.level = level
+        self.windowLevelChanged.emit(
+                self.windowLevelEnabled, self.window, self.level)
