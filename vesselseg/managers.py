@@ -465,7 +465,6 @@ class FilterManager(QObject):
     def toggleWindowLevel(self, enabled):
         '''Toggles window/level filter.'''
         self.windowLevelEnabled = enabled
-        print enabled
         self.windowLevelChanged.emit(
                 self.windowLevelEnabled, self.window, self.level)
 
