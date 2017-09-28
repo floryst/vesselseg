@@ -6,7 +6,8 @@ This is an application for interactive vessel segmentation.
 
 A few prerequisites:
 
-- PyQt4
+- PyQt5
+- numpy
 - [VTK](https://github.com/kitware/vtk)
   - Should be built with Python bindings (cmake variable `VTK_WRAP_PYTHON:BOOL=ON`)
 - [ITKTubeTK](https://github.com/KitwareMedical/ITKTubeTK)

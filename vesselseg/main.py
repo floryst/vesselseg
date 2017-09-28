@@ -3,8 +3,12 @@ import sys
 import signal
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-from PyQt4.QtGui import QApplication
-from PyQt4.QtCore import QObject
+# set vtk renderwindow base class to QGLWidget
+import vtk.qt
+vtk.qt.QVTKRWIBase = 'QGLWidget'
+
+from PyQt5.QtWidgets import QApplication
+from PyQt5.QtCore import QObject
 from mainwindow import MainWindow
 from managers import *
 
@@ -68,9 +72,10 @@ class VesselSegApp(QObject):
         '''Tear down application.'''
         self.segmentManager.stop()
 
-    def loadFile(self, qfilename):
+    def loadFile(self, filename):
+        # filename is passed as a unicode type, so make it str type
+        filename = str(filename)
         progress = self.viewManager.makeProgressDialog('Loading image...')
-        filename = qfilename.toLatin1().data()
         if self.imageManager.loadImage(filename):
             pass
         elif self.tubeManager.loadTubes(filename):

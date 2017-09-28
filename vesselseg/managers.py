@@ -1,6 +1,6 @@
 import os
 
-from PyQt4.QtCore import QThread, QObject, pyqtSignal
+from PyQt5.QtCore import QThread, QObject, pyqtSignal
 
 import vtk
 import itk

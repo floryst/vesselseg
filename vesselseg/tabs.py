@@ -1,5 +1,6 @@
-from PyQt4.QtCore import Qt, pyqtSignal, QPoint
-from PyQt4.QtGui import *
+from PyQt5.QtCore import Qt, pyqtSignal, QPoint
+from PyQt5.QtWidgets import *
+from PyQt5.QtGui import QDoubleValidator
 
 METADATA_TEMPLATE = \
 '''
@@ -169,7 +170,7 @@ class SegmentTab(QWidget):
         self.segmentEnabled.emit(self.segmentBtn.isChecked())
 
     def onScaleInputChanged(self, text):
-        self.scaleChanged.emit(float(text or 0))
+        self.scaleChanged.emit(float('0'+text))
 
     def isSegmentEnabled(self):
         '''Checks if segmentation is enabled.'''

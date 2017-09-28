@@ -9,7 +9,7 @@ import itk
 import itkTypes
 import itkExtras
 
-from PyQt4.QtCore import *
+from PyQt5.QtCore import *
 
 from tomviz import itkutils
 

@@ -1,5 +1,5 @@
-from PyQt4.QtGui import *
-from PyQt4.QtCore import Qt, pyqtSignal
+from PyQt5.QtWidgets import *
+from PyQt5.QtCore import Qt, pyqtSignal
 
 from tabs import *
 from vtkviewer import VTKViewer
