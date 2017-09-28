@@ -26,6 +26,7 @@ class VesselSegApp(QObject):
         self.filterManager = FilterManager()
 
         self.viewManager.setSegmentScale(self.segmentManager.scale())
+        self.viewManager.disableUi()
 
         self.window.closed.connect(self.teardown)
         self.viewManager.fileSelected.connect(self.loadFile)
@@ -76,10 +77,9 @@ class VesselSegApp(QObject):
         # filename is passed as a unicode type, so make it str type
         filename = str(filename)
         progress = self.viewManager.makeProgressDialog('Loading image...')
-        if self.imageManager.loadImage(filename):
-            pass
-        elif self.tubeManager.loadTubes(filename):
-            pass
+        if self.imageManager.loadImage(filename) or \
+                self.tubeManager.loadTubes(filename):
+            self.viewManager.enableUi()
         else:
             self.viewManager.alert('File %s could not opened' % filename)
         progress.close()
