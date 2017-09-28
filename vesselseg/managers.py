@@ -268,6 +268,8 @@ class ViewManager(QObject):
     windowLevelChanged = pyqtSignal(float, float)
     # signal: window/level filter state changed
     windowLevelFilterChanged = pyqtSignal(bool)
+    # signal: median filter changed
+    medianFilterChanged = pyqtSignal(bool, int)
 
     def __init__(self, window, parent=None):
         super(ViewManager, self).__init__(parent)
@@ -289,6 +291,8 @@ class ViewManager(QObject):
         self.window.tubeTreeTabView().wantSaveTubes.connect(self.saveTubes)
         self.window.filtersTabView().windowLevelFilterChanged.connect(
                 self.windowLevelFilterChanged)
+        self.window.filtersTabView().medianFilterChanged.connect(
+                self.medianFilterChanged)
 
     def displayImage(self, vtkImage):
         '''Displays a VTK ImageData to the UI.'''
@@ -428,6 +432,10 @@ class SegmentManager(QObject):
         '''Sets window and level for image.'''
         self.worker.setWindowLevel(enabled, window, level)
 
+    def setMedianParams(self, enabled, radius):
+        '''Sets window and level for image.'''
+        self.worker.setMedianParams(enabled, radius)
+
     def segmentTube(self, x, y, z):
         '''Segments a tube at (x, y, z).'''
         self._jobCount += 1
@@ -456,12 +464,17 @@ class FilterManager(QObject):
 
     # signal: Window/Level params changed
     windowLevelChanged = pyqtSignal(bool, float, float)
+    # signal: median filter params changed
+    medianParamsChanged = pyqtSignal(bool, int)
 
     def __init__(self, parent=None):
         super(FilterManager, self).__init__(parent)
 
         self.window, self.level = 1, 0.5
         self.windowLevelEnabled = False
+
+        self.medianEnabled = False
+        self.medianRadius = 0
 
     def toggleWindowLevel(self, enabled):
         '''Toggles window/level filter.'''
@@ -474,3 +487,9 @@ class FilterManager(QObject):
         self.level = level
         self.windowLevelChanged.emit(
                 self.windowLevelEnabled, self.window, self.level)
+
+    def setMedianParams(self, enabled, radius):
+        '''Sets median filter state and params.'''
+        self.medianEnabled = enabled
+        self.medianRadius = radius
+        self.medianParamsChanged.emit(enabled, radius)

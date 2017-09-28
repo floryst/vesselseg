@@ -45,7 +45,7 @@ class SegmentResult(object):
 class SegmentWorker(QObject):
     '''Threaded worker to perform tube segmentation.'''
 
-    SEGMENT, WINDOWLEVEL = range(2)
+    SEGMENT, WINDOWLEVEL, MEDIAN = range(3)
 
     # signal: segmentation job finished
     jobFinished = pyqtSignal(SegmentResult)
@@ -81,6 +81,11 @@ class SegmentWorker(QObject):
                     filter_ = self.segmenter.getFilter()
                     if filter_:
                         filter_.setWindowLevel(enabled, window, level)
+                elif action == self.MEDIAN:
+                    enabled, radius = args
+                    filter_ = self.segmenter.getFilter()
+                    if filter_:
+                        filter_.setMedianParams(enabled, radius)
                 self.busyFlag = not self.jobQueue.empty()
 
         # tell main thread that this worker has terminated
@@ -107,6 +112,10 @@ class SegmentWorker(QObject):
     def setWindowLevel(self, enabled, window, level):
         '''Sets window/level for image.'''
         self.jobQueue.put((self.WINDOWLEVEL, (enabled, window, level)))
+
+    def setMedianParams(self, enabled, radius):
+        '''Sets window/level for image.'''
+        self.jobQueue.put((self.MEDIAN, (enabled, radius)))
 
     def stop(self):
         '''Tell this worker to stop when possible.'''
@@ -146,6 +155,7 @@ class SegmentImageFilter(object):
     '''Constructs image filter.'''
 
     WINDOWLEVEL = 'Window/Level'
+    MEDIAN = 'Median'
 
     def __init__(self, image, imageType, pixelType):
         self.inputImage = image
@@ -156,6 +166,8 @@ class SegmentImageFilter(object):
         self.filters = collections.OrderedDict([
             (self.WINDOWLEVEL,
                 itk.IntensityWindowingImageFilter[imageType, imageType].New()),
+            (self.MEDIAN,
+                itk.MedianImageFilter[imageType, imageType].New()),
         ])
         self.enabled = {name: False for name in self.filters.keys()}
 
@@ -170,10 +182,10 @@ class SegmentImageFilter(object):
                     curFilter.SetInput(self.inputImage)
                 else:
                     curFilter.SetInput(prevFilter.GetOutput())
-                curFilter.Update()
                 prevFilter = curFilter
 
         if curFilter:
+            curFilter.Update()
             return curFilter.GetOutput()
         else:
             return self.inputImage
@@ -201,6 +213,11 @@ class SegmentImageFilter(object):
                 int(min(maxValue, max(minValue, level))))
         filter_.SetOutputMinimum(minValue)
         filter_.SetOutputMaximum(maxValue)
+
+    def setMedianParams(self, enabled, radius):
+        self.enabled[self.MEDIAN] = enabled
+        filter_ = self.filters[self.MEDIAN]
+        filter_.SetRadius(radius)
 
 class SegmentTubes(object):
     '''Holds logic to segment tubes from an image.'''

@@ -38,6 +38,8 @@ class VesselSegApp(QObject):
                 self.filterManager.setWindowLevel)
         self.viewManager.windowLevelFilterChanged.connect(
                 self.filterManager.toggleWindowLevel)
+        self.viewManager.medianFilterChanged.connect(
+                self.filterManager.setMedianParams)
         self.imageManager.imageLoaded.connect(self.viewManager.displayImage)
         self.imageManager.imageLoaded.connect(self.setSegmentImage)
         self.imageManager.imageLoaded.connect(self.resetTubeManager)
@@ -50,6 +52,8 @@ class VesselSegApp(QObject):
                 self.viewManager.showTubeSelection)
         self.filterManager.windowLevelChanged.connect(
                 self.segmentManager.setWindowLevel)
+        self.filterManager.medianParamsChanged.connect(
+                self.segmentManager.setMedianParams)
 
     def run(self):
         '''Runs the application.

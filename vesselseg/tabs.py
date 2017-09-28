@@ -47,6 +47,8 @@ class FiltersTab(QWidget):
 
     # signal: window/level filter changed (enabled)
     windowLevelFilterChanged = pyqtSignal(bool)
+    # signal: median filter state changed (enabled, radius)
+    medianFilterChanged = pyqtSignal(bool, int)
 
     def __init__(self, parent=None):
         super(FiltersTab, self).__init__(parent)
@@ -57,14 +59,43 @@ class FiltersTab(QWidget):
         self.windowLevelCheckbox = QCheckBox('Window/Level filter', self)
         self.layout.addWidget(self.windowLevelCheckbox)
 
+        self.medianCheckbox = QCheckBox('Median filter', self)
+        self.layout.addWidget(self.medianCheckbox)
+
+        # median filter parameters
+        self.medianFilterParams = QWidget(self)
+        self.medianFilterForm = QFormLayout(self.medianFilterParams)
+        self.medianFilterParams.setLayout(self.medianFilterForm)
+        self.medianRadiusInput = QSpinBox(self)
+        self.medianFilterForm.addRow('Radius:', self.medianRadiusInput)
+
+        self.medianFilterParams.setEnabled(False)
+        self.layout.addWidget(self.medianFilterParams)
+
         spacer = QSpacerItem(40, 20, QSizePolicy.Minimum, QSizePolicy.Expanding)
         self.layout.addItem(spacer)
 
         self.windowLevelCheckbox.stateChanged.connect(
                 self.windowLevelStateChanged)
+        self.medianCheckbox.stateChanged.connect(
+                self.toggleMedianFilter)
+        self.medianRadiusInput.valueChanged.connect(
+                self.emitMedianFilterChanged)
 
     def windowLevelStateChanged(self, state):
         self.windowLevelFilterChanged.emit(bool(state))
+
+    def toggleMedianFilter(self, state):
+        self.medianFilterParams.setEnabled(bool(state))
+        self.emitMedianFilterChanged()
+
+    def setMedianRadius(self, _):
+        self.emitMedianFilterChanged()
+
+    def emitMedianFilterChanged(self):
+        self.medianFilterChanged.emit(
+                self.medianCheckbox.isChecked(),
+                self.medianRadiusInput.value())
 
 class SegmentTab(QWidget):
     '''Segment tab holds parameter inputs for segmentation.'''
