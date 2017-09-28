@@ -3,6 +3,10 @@ import sys
 import signal
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
+# set vtk renderwindow base class to QGLWidget
+import vtk.qt
+vtk.qt.QVTKRWIBase = 'QGLWidget'
+
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QObject
 from mainwindow import MainWindow
