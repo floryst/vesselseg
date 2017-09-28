@@ -29,6 +29,7 @@ class VesselSegApp(QObject):
         self.viewManager.disableUi()
 
         self.window.closed.connect(self.teardown)
+
         self.viewManager.fileSelected.connect(self.loadFile)
         self.viewManager.imageVoxelSelected.connect(self.segmentTube)
         self.viewManager.scaleChanged.connect(self.segmentManager.setScale)
@@ -45,16 +46,20 @@ class VesselSegApp(QObject):
                 self.filterManager.toggleWindowLevel)
         self.viewManager.medianFilterChanged.connect(
                 self.filterManager.setMedianParams)
+
         self.imageManager.imageLoaded.connect(self.viewManager.displayImage)
         self.imageManager.imageLoaded.connect(self.setSegmentImage)
         self.imageManager.imageLoaded.connect(self.resetTubeManager)
+
         self.segmentManager.tubeSegmented.connect(
                 self.tubeManager.addSegmentedTube)
         self.segmentManager.jobCountChanged.connect(
                 self.viewManager.showJobCount)
+
         self.tubeManager.tubesUpdated.connect(self.viewManager.displayTubes)
         self.tubeManager.tubeSelectionChanged.connect(
                 self.viewManager.showTubeSelection)
+
         self.filterManager.windowLevelChanged.connect(
                 self.segmentManager.setWindowLevel)
         self.filterManager.medianParamsChanged.connect(
