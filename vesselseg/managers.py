@@ -294,6 +294,16 @@ class ViewManager(QObject):
         self.window.filtersTabView().medianFilterChanged.connect(
                 self.medianFilterChanged)
 
+    def disableUi(self):
+        self.setUiState(False)
+
+    def enableUi(self):
+        self.setUiState(True)
+
+    def setUiState(self, state):
+        '''Sets the Ui enabled/disabled state.'''
+        self.window.ui.setEnabled(state)
+
     def displayImage(self, vtkImage):
         '''Displays a VTK ImageData to the UI.'''
         self.window.vtkView().displayImage(vtkImage)
