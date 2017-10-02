@@ -11,6 +11,20 @@ from models import TubeTreeViewModel, RAW_DATA_ROLE
 
 TUBE_ID_KEY = keys.MakeKey(keys.StringKey, 'tube.id', '')
 
+def forwardSignal(source, dest, signal):
+    '''Forwards a Qt signal from source to dest.
+
+    Will throw exception if a property exists on dest has the same name
+    as the signal.
+    '''
+    if not hasattr(source, signal):
+        raise Exception(
+                'Signal %s does not exist on %s' % (signal, repr(source)))
+    if hasattr(dest, signal):
+        raise Exception(
+                'Property with name %s exists on %s' % (signal, repr(dest)))
+    setattr(dest, signal, getattr(source, signal))
+
 class ImageManager(QObject):
     '''Manager for the loaded image.'''
 
@@ -250,27 +264,6 @@ class TubePolyManager(QObject):
 class ViewManager(QObject):
     '''Manager of the UI.'''
 
-    # signal: file was selected for loading
-    fileSelected = pyqtSignal(str)
-    # signal: scale input changed
-    scaleChanged = pyqtSignal(float)
-    # signal: image voxel selected
-    imageVoxelSelected = pyqtSignal(float, float, float)
-    # signal: a tube was selected
-    tubeSelected = pyqtSignal(str)
-    # signal: deletion of current tube selection
-    deleteTubeSelBtnClicked = pyqtSignal()
-    # signal: clearing of current tube selection
-    clearTubeSelBtnClicked = pyqtSignal()
-    # signal: selecting of all tubes
-    selectAllTubesBtnClicked = pyqtSignal()
-    # signal: window/level changed on vtkviewer
-    windowLevelChanged = pyqtSignal(float, float)
-    # signal: window/level filter state changed
-    windowLevelFilterChanged = pyqtSignal(bool)
-    # signal: median filter changed
-    medianFilterChanged = pyqtSignal(bool, int)
-
     def __init__(self, window, parent=None):
         super(ViewManager, self).__init__(parent)
 
@@ -278,32 +271,27 @@ class ViewManager(QObject):
         self.tubePolyManager = TubePolyManager()
 
         # main window
-        self.window.fileSelected.connect(self.fileSelected)
+        forwardSignal(window, self, 'fileSelected')
 
         # vtk viewer
-        self.window.vtkView().imageVoxelSelected.connect(self.imageVoxelSelected)
-        self.window.vtkView().volumeBlockSelected.connect(self.pickTubeBlock)
-        self.window.vtkView().windowLevelChanged.connect(self.windowLevelChanged)
+        forwardSignal(window.vtkView(), self, 'imageVoxelSelected')
+        forwardSignal(window.vtkView(), self, 'tubeSelected')
+        forwardSignal(window.vtkView(), self, 'windowLevelChanged')
 
         # segment tab
-        self.window.segmentTabView().scaleChanged.connect(self.scaleChanged)
+        forwardSignal(window.segmentTabView(), self, 'scaleChanged')
 
         # selection
-        self.window.selectionTabView().deleteTubeSelBtnClicked.connect(
-                self.deleteTubeSelBtnClicked)
-        self.window.selectionTabView().clearTubeSelBtnClicked.connect(
-                self.clearTubeSelBtnClicked)
-        self.window.selectionTabView().selectAllTubesBtnClicked.connect(
-                self.selectAllTubesBtnClicked)
+        forwardSignal(window.selectionTabView(), self, 'deleteTubeSelClicked')
+        forwardSignal(window.selectionTabView(), self, 'clearTubeSelClicked')
+        forwardSignal(window.selectionTabView(), self, 'selectAllTubesClicked')
 
         # tube tree
-        self.window.tubeTreeTabView().wantSaveTubes.connect(self.saveTubes)
+        forwardSignal(window.tubeTreeTabView(), self, 'saveTubesClicked')
 
         # filters
-        self.window.filtersTabView().windowLevelFilterChanged.connect(
-                self.windowLevelFilterChanged)
-        self.window.filtersTabView().medianFilterChanged.connect(
-                self.medianFilterChanged)
+        forwardSignal(window.filtersTabView(), self, 'windowLevelFilterChanged')
+        forwardSignal(window.filtersTabView(), self, 'medianFilterChanged')
 
     def disableUi(self):
         self.setUiState(False)
@@ -347,18 +335,6 @@ class ViewManager(QObject):
     def showJobCount(self, count):
         '''Shows segment job count.'''
         self.window.showJobCount(count)
-
-    def pickTubeBlock(self, blockIndex):
-        '''Picks out the clicked tube.'''
-        it = self.tubePolyManager.tubeBlocks().NewTreeIterator()
-        it.SetVisitOnlyLeaves(False)
-        it.InitTraversal()
-        while not it.IsDoneWithTraversal():
-            if blockIndex == it.GetCurrentFlatIndex():
-                tubeId = it.GetCurrentMetaData().Get(TUBE_ID_KEY)
-                self.tubeSelected.emit(tubeId)
-                break
-            it.GoToNextItem()
 
     def showTubeSelection(self, selection):
         '''Shows a tube selection.

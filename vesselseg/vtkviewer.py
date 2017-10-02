@@ -49,8 +49,8 @@ class VTKViewer(QWidget):
 
     # signal: image voxel selected at given coord
     imageVoxelSelected = pyqtSignal(float, float, float)
-    # signal: a block was selected in volume renderer
-    volumeBlockSelected = pyqtSignal(int)
+    # signal: a tube was selected
+    tubeSelected = pyqtSignal(str)
     # signal: window/level changed. Values are between [0,1]
     windowLevelChanged = pyqtSignal(float, float)
 
@@ -177,7 +177,7 @@ class VTKViewer(QWidget):
         clickX, clickY = istyle.GetInteractor().GetEventPosition()
         picker = istyle.GetInteractor().GetPicker()
         if picker.Pick(clickX, clickY, 0, self.volumeRenderer):
-            self.volumeBlockSelected.emit(picker.GetFlatBlockIndex())
+            self.pickTubeBlock(picker.GetFlatBlockIndex())
 
     def onWindowLevelChange(self, istyle, event):
         '''Callback when the VTK image window level changes.'''
@@ -186,6 +186,18 @@ class VTKViewer(QWidget):
             # TODO handle case when user pressing "R/r" resets the window/level
             window, level = imageProp.GetColorWindow(), imageProp.GetColorLevel()
             self.windowLevelChanged.emit(window/255.0, level/255.0)
+
+    def pickTubeBlock(self, blockIndex):
+        '''Picks out the clicked tube.'''
+        it = self.tubePolyManager.tubeBlocks().NewTreeIterator()
+        it.SetVisitOnlyLeaves(False)
+        it.InitTraversal()
+        while not it.IsDoneWithTraversal():
+            if blockIndex == it.GetCurrentFlatIndex():
+                tubeId = it.GetCurrentMetaData().Get(TUBE_ID_KEY)
+                self.tubeSelected.emit(tubeId)
+                break
+            it.GoToNextItem()
 
     def displayImage(self, vtkImageData):
         '''Updates viewer with a new image.'''

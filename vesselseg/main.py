@@ -36,11 +36,11 @@ class VesselSegApp(QObject):
         self.viewManager.imageVoxelSelected.connect(self.segmentTube)
         self.viewManager.scaleChanged.connect(self.segmentManager.setScale)
         self.viewManager.tubeSelected.connect(self.tubeManager.toggleSelection)
-        self.viewManager.deleteTubeSelBtnClicked.connect(
+        self.viewManager.deleteTubeSelClicked.connect(
                 self.tubeManager.deleteSelection)
-        self.viewManager.clearTubeSelBtnClicked.connect(
+        self.viewManager.clearTubeSelClicked.connect(
                 self.tubeManager.clearSelection)
-        self.viewManager.selectAllTubesBtnClicked.connect(
+        self.viewManager.selectAllTubesClicked.connect(
                 self.tubeManager.selectAllTubes)
         self.viewManager.windowLevelChanged.connect(
                 self.filterManager.setWindowLevel)
