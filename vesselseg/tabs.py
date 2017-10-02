@@ -37,9 +37,8 @@ class TubeTreeTab(QTreeView):
         '''Save selected tubes.'''
         selection = self.selectionModel().selectedIndexes()
         if len(selection):
-            ext = '.tre'
-            filename = QFileDialog.getSaveFileName(
-                    self, 'Save File', '', ext)
+            filename, ext = QFileDialog.getSaveFileName(
+                    self, 'Save File', '', '.tre')
             if filename:
                 self.saveTubesClicked.emit(selection, str(filename + ext))
 
