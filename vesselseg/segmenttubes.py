@@ -281,9 +281,6 @@ class SegmentTubes(object):
         self.segTubes = itk.TubeTKITK.SegmentTubes[self.imageType].New()
         self.segTubes.SetInputImage(self.filter.getOutput())
 
-        if self.tubeGroup:
-            for tube in TubeIterator(self.tubeGroup):
-                self.segTubes.AddTube(tube)
         self.tubeGroup = self.segTubes.GetTubeGroup()
 
         seedPoint = itk.Point[itkTypes.D, self.dimension]()
