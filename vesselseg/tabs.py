@@ -13,7 +13,7 @@ class TubeTreeTab(QTreeView):
     '''Tube tree tab displays tubes in tree view.'''
 
     # signal: defer tube saving to a non-view componetn
-    wantSaveTubes = pyqtSignal(list, str)
+    saveTubesClicked = pyqtSignal(list, str)
 
     def __init__(self, parent=None):
         super(TubeTreeTab, self).__init__(parent)
@@ -37,11 +37,10 @@ class TubeTreeTab(QTreeView):
         '''Save selected tubes.'''
         selection = self.selectionModel().selectedIndexes()
         if len(selection):
-            ext = '.tre'
-            filename = QFileDialog.getSaveFileName(
-                    self, 'Save File', '', ext)
+            filename, ext = QFileDialog.getSaveFileName(
+                    self, 'Save File', '', '.tre')
             if filename:
-                self.wantSaveTubes.emit(selection, str(filename + ext))
+                self.saveTubesClicked.emit(selection, str(filename + ext))
 
 class FiltersTab(QWidget):
     '''Filters tab holds options for preprocessing the segment image.'''
@@ -182,11 +181,11 @@ class SelectionTab(QWidget):
     COUNT_LABEL = 'Number of selected tubes: %d'
 
     # signal: request deletion of current tube selection
-    wantTubeSelectionDeleted = pyqtSignal()
+    deleteTubeSelClicked = pyqtSignal()
     # signal: request clearing of current tube selection
-    wantTubeSelectionCleared = pyqtSignal()
+    clearTubeSelClicked = pyqtSignal()
     # signal: request selecting of all tubes
-    wantAllTubesSelected = pyqtSignal()
+    selectAllTubesClicked = pyqtSignal()
 
     def __init__(self, parent=None):
         super(SelectionTab, self).__init__(parent)
@@ -205,9 +204,9 @@ class SelectionTab(QWidget):
         self.clearBtn = QPushButton('Clear selection')
         self.form.addWidget(self.clearBtn)
 
-        self.selAllBtn.clicked.connect(self.wantAllTubesSelected)
-        self.deleteBtn.clicked.connect(self.wantTubeSelectionDeleted)
-        self.clearBtn.clicked.connect(self.wantTubeSelectionCleared)
+        self.selAllBtn.clicked.connect(self.selectAllTubesClicked)
+        self.deleteBtn.clicked.connect(self.deleteTubeSelClicked)
+        self.clearBtn.clicked.connect(self.clearTubeSelClicked)
 
     def setTubeSelection(self, tubeSelection):
         '''Sets the count of tubes.

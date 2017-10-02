@@ -4,6 +4,8 @@ from PyQt5.QtWidgets import *
 import vtk
 from vtk.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 
+from managers import TUBE_ID_KEY
+
 class SliceSlider(QWidget):
     '''Represents the slice control widget.'''
 
@@ -49,8 +51,8 @@ class VTKViewer(QWidget):
 
     # signal: image voxel selected at given coord
     imageVoxelSelected = pyqtSignal(float, float, float)
-    # signal: a block was selected in volume renderer
-    volumeBlockSelected = pyqtSignal(int)
+    # signal: a tube was selected
+    tubeSelected = pyqtSignal(str)
     # signal: window/level changed. Values are between [0,1]
     windowLevelChanged = pyqtSignal(float, float)
 
@@ -98,6 +100,7 @@ class VTKViewer(QWidget):
         super(VTKViewer, self).__init__(parent)
 
         self.slicePosition = 0
+        self.tubeBlocks = None
 
         self.hbox = QHBoxLayout(self)
 
@@ -177,7 +180,7 @@ class VTKViewer(QWidget):
         clickX, clickY = istyle.GetInteractor().GetEventPosition()
         picker = istyle.GetInteractor().GetPicker()
         if picker.Pick(clickX, clickY, 0, self.volumeRenderer):
-            self.volumeBlockSelected.emit(picker.GetFlatBlockIndex())
+            self.pickTubeBlock(picker.GetFlatBlockIndex())
 
     def onWindowLevelChange(self, istyle, event):
         '''Callback when the VTK image window level changes.'''
@@ -185,7 +188,22 @@ class VTKViewer(QWidget):
         if imageProp:
             # TODO handle case when user pressing "R/r" resets the window/level
             window, level = imageProp.GetColorWindow(), imageProp.GetColorLevel()
-            self.windowLevelChanged.emit(window/255.0, level/255.0)
+            window = min(1.0, max(0.0, window/255.0))
+            level = min(1.0, max(0.0, level/255.0))
+            self.windowLevelChanged.emit(window, level)
+
+    def pickTubeBlock(self, blockIndex):
+        '''Picks out the clicked tube.'''
+        if self.tubeBlocks:
+            it = self.tubeBlocks.NewTreeIterator()
+            it.SetVisitOnlyLeaves(False)
+            it.InitTraversal()
+            while not it.IsDoneWithTraversal():
+                if blockIndex == it.GetCurrentFlatIndex():
+                    tubeId = it.GetCurrentMetaData().Get(TUBE_ID_KEY)
+                    self.tubeSelected.emit(tubeId)
+                    break
+                it.GoToNextItem()
 
     def displayImage(self, vtkImageData):
         '''Updates viewer with a new image.'''
@@ -274,6 +292,8 @@ class VTKViewer(QWidget):
 
     def showTubeBlocks(self, tubeBlocks):
         '''Shows tube blocks in scene.'''
+        self.tubeBlocks = tubeBlocks
+
         # make sure tube actor is in the scene
         if not self.volumeRenderer.HasViewProp(self.tubeActor):
             self.volumeRenderer.AddActor(self.tubeActor)
