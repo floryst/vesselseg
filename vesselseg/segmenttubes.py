@@ -181,6 +181,7 @@ class SegmentImageFilter(object):
                 if prevFilter is None:
                     curFilter.SetInput(self.inputImage)
                 else:
+                    prevFilter.Update()
                     curFilter.SetInput(prevFilter.GetOutput())
                 prevFilter = curFilter
 
@@ -213,6 +214,8 @@ class SegmentImageFilter(object):
                 int(min(maxValue, max(minValue, level))))
         filter_.SetOutputMinimum(minValue)
         filter_.SetOutputMaximum(maxValue)
+        # tell Update() that something has changed
+        filter_.Modified()
 
     def setMedianParams(self, enabled, radius):
         self.enabled[self.MEDIAN] = enabled

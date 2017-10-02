@@ -185,7 +185,9 @@ class VTKViewer(QWidget):
         if imageProp:
             # TODO handle case when user pressing "R/r" resets the window/level
             window, level = imageProp.GetColorWindow(), imageProp.GetColorLevel()
-            self.windowLevelChanged.emit(window/255.0, level/255.0)
+            window = min(1.0, max(0.0, window/255.0))
+            level = min(1.0, max(0.0, level/255.0))
+            self.windowLevelChanged.emit(window, level)
 
     def pickTubeBlock(self, blockIndex):
         '''Picks out the clicked tube.'''
