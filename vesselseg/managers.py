@@ -258,12 +258,12 @@ class ViewManager(QObject):
     imageVoxelSelected = pyqtSignal(float, float, float)
     # signal: a tube was selected
     tubeSelected = pyqtSignal(str)
-    # signal: request deletion of current tube selection
-    wantTubeSelectionDeleted = pyqtSignal()
-    # signal: request clearing of current tube selection
-    wantTubeSelectionCleared = pyqtSignal()
-    # signal: request selecting of all tubes
-    wantAllTubesSelected = pyqtSignal()
+    # signal: deletion of current tube selection
+    deleteTubeSelBtnClicked = pyqtSignal()
+    # signal: clearing of current tube selection
+    clearTubeSelBtnClicked = pyqtSignal()
+    # signal: selecting of all tubes
+    selectAllTubesBtnClicked = pyqtSignal()
     # signal: window/level changed on vtkviewer
     windowLevelChanged = pyqtSignal(float, float)
     # signal: window/level filter state changed
@@ -277,18 +277,29 @@ class ViewManager(QObject):
         self.window = window
         self.tubePolyManager = TubePolyManager()
 
+        # main window
         self.window.fileSelected.connect(self.fileSelected)
+
+        # vtk viewer
         self.window.vtkView().imageVoxelSelected.connect(self.imageVoxelSelected)
         self.window.vtkView().volumeBlockSelected.connect(self.pickTubeBlock)
         self.window.vtkView().windowLevelChanged.connect(self.windowLevelChanged)
+
+        # segment tab
         self.window.segmentTabView().scaleChanged.connect(self.scaleChanged)
-        self.window.selectionTabView().wantTubeSelectionDeleted.connect(
-                self.wantTubeSelectionDeleted)
-        self.window.selectionTabView().wantTubeSelectionCleared.connect(
-                self.wantTubeSelectionCleared)
-        self.window.selectionTabView().wantAllTubesSelected.connect(
-                self.wantAllTubesSelected)
+
+        # selection
+        self.window.selectionTabView().deleteTubeSelBtnClicked.connect(
+                self.deleteTubeSelBtnClicked)
+        self.window.selectionTabView().clearTubeSelBtnClicked.connect(
+                self.clearTubeSelBtnClicked)
+        self.window.selectionTabView().selectAllTubesBtnClicked.connect(
+                self.selectAllTubesBtnClicked)
+
+        # tube tree
         self.window.tubeTreeTabView().wantSaveTubes.connect(self.saveTubes)
+
+        # filters
         self.window.filtersTabView().windowLevelFilterChanged.connect(
                 self.windowLevelFilterChanged)
         self.window.filtersTabView().medianFilterChanged.connect(
@@ -372,6 +383,7 @@ class ViewManager(QObject):
         self.window.selectionTabView().setTubeSelection(selection)
 
     def saveTubes(self, selection, filename):
+        # TODO move to tube manager
         dim = 3
         model = self.window.tubeTreeTabView().model()
         tubes = [model.data(index, RAW_DATA_ROLE) for index in selection]

@@ -28,17 +28,19 @@ class VesselSegApp(QObject):
         self.viewManager.setSegmentScale(self.segmentManager.scale())
         self.viewManager.disableUi()
 
+        # main window
         self.window.closed.connect(self.teardown)
 
+        # view manager
         self.viewManager.fileSelected.connect(self.loadFile)
         self.viewManager.imageVoxelSelected.connect(self.segmentTube)
         self.viewManager.scaleChanged.connect(self.segmentManager.setScale)
         self.viewManager.tubeSelected.connect(self.tubeManager.toggleSelection)
-        self.viewManager.wantTubeSelectionDeleted.connect(
+        self.viewManager.deleteTubeSelBtnClicked.connect(
                 self.tubeManager.deleteSelection)
-        self.viewManager.wantTubeSelectionCleared.connect(
+        self.viewManager.clearTubeSelBtnClicked.connect(
                 self.tubeManager.clearSelection)
-        self.viewManager.wantAllTubesSelected.connect(
+        self.viewManager.selectAllTubesBtnClicked.connect(
                 self.tubeManager.selectAllTubes)
         self.viewManager.windowLevelChanged.connect(
                 self.filterManager.setWindowLevel)
@@ -47,19 +49,23 @@ class VesselSegApp(QObject):
         self.viewManager.medianFilterChanged.connect(
                 self.filterManager.setMedianParams)
 
+        # image manager
         self.imageManager.imageLoaded.connect(self.viewManager.displayImage)
         self.imageManager.imageLoaded.connect(self.setSegmentImage)
         self.imageManager.imageLoaded.connect(self.resetTubeManager)
 
+        # segment manager
         self.segmentManager.tubeSegmented.connect(
                 self.tubeManager.addSegmentedTube)
         self.segmentManager.jobCountChanged.connect(
                 self.viewManager.showJobCount)
 
+        # tube manager
         self.tubeManager.tubesUpdated.connect(self.viewManager.displayTubes)
         self.tubeManager.tubeSelectionChanged.connect(
                 self.viewManager.showTubeSelection)
 
+        # filter manager
         self.filterManager.windowLevelChanged.connect(
                 self.segmentManager.setWindowLevel)
         self.filterManager.medianParamsChanged.connect(
