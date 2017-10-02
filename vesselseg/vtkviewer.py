@@ -4,6 +4,8 @@ from PyQt5.QtWidgets import *
 import vtk
 from vtk.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 
+from managers import TUBE_ID_KEY
+
 class SliceSlider(QWidget):
     '''Represents the slice control widget.'''
 
@@ -98,6 +100,7 @@ class VTKViewer(QWidget):
         super(VTKViewer, self).__init__(parent)
 
         self.slicePosition = 0
+        self.tubeBlocks = None
 
         self.hbox = QHBoxLayout(self)
 
@@ -191,15 +194,16 @@ class VTKViewer(QWidget):
 
     def pickTubeBlock(self, blockIndex):
         '''Picks out the clicked tube.'''
-        it = self.tubePolyManager.tubeBlocks().NewTreeIterator()
-        it.SetVisitOnlyLeaves(False)
-        it.InitTraversal()
-        while not it.IsDoneWithTraversal():
-            if blockIndex == it.GetCurrentFlatIndex():
-                tubeId = it.GetCurrentMetaData().Get(TUBE_ID_KEY)
-                self.tubeSelected.emit(tubeId)
-                break
-            it.GoToNextItem()
+        if self.tubeBlocks:
+            it = self.tubeBlocks.NewTreeIterator()
+            it.SetVisitOnlyLeaves(False)
+            it.InitTraversal()
+            while not it.IsDoneWithTraversal():
+                if blockIndex == it.GetCurrentFlatIndex():
+                    tubeId = it.GetCurrentMetaData().Get(TUBE_ID_KEY)
+                    self.tubeSelected.emit(tubeId)
+                    break
+                it.GoToNextItem()
 
     def displayImage(self, vtkImageData):
         '''Updates viewer with a new image.'''
@@ -288,6 +292,8 @@ class VTKViewer(QWidget):
 
     def showTubeBlocks(self, tubeBlocks):
         '''Shows tube blocks in scene.'''
+        self.tubeBlocks = tubeBlocks
+
         # make sure tube actor is in the scene
         if not self.volumeRenderer.HasViewProp(self.tubeActor):
             self.volumeRenderer.AddActor(self.tubeActor)
