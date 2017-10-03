@@ -100,6 +100,10 @@ class MainWindow(QMainWindow):
         '''Getter for filters tab.'''
         return self.ui.filtersTab
 
+    def threeDTabView(self):
+        '''Getter for 3D tab.'''
+        return self.ui.threeDTab
+
 class Ui(QSplitter):
     def __init__(self, parent=None):
         super(Ui, self).__init__(Qt.Vertical, parent)
@@ -124,6 +128,9 @@ class Ui(QSplitter):
 
         self.selectionTab = SelectionTab(self)
         self.tabs.addTab(self.selectionTab, 'Selection')
+
+        self.threeDTab = ThreeDTab(self)
+        self.tabs.addTab(self.threeDTab, '3D')
 
     def initVTK(self):
         '''Initializes the VTK renderers.'''

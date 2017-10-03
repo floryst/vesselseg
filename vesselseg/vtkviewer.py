@@ -101,6 +101,7 @@ class VTKViewer(QWidget):
 
         self.slicePosition = 0
         self.tubeBlocks = None
+        self.volume = None
 
         self.hbox = QHBoxLayout(self)
 
@@ -289,16 +290,13 @@ class VTKViewer(QWidget):
         prop.SetInterpolationType(vtk.VTK_LINEAR_INTERPOLATION)
         prop.SetColor(color)
         prop.SetScalarOpacity(opacity)
-        # sets scalar opacity unit distance according to image spacing.
-        avgSpacing = sum(vtkImageData.GetSpacing()) / 3.0
-        prop.SetScalarOpacityUnitDistance(15 * avgSpacing)
 
-        volume = vtk.vtkVolume()
-        volume.SetMapper(mapper)
-        volume.SetProperty(prop)
+        self.volume = vtk.vtkVolume()
+        self.volume.SetMapper(mapper)
+        self.volume.SetProperty(prop)
 
         self.volumeRenderer.RemoveAllViewProps()
-        self.volumeRenderer.AddViewProp(volume)
+        self.volumeRenderer.AddViewProp(self.volume)
 
         self.volumeRenderer.ResetCamera()
         self.volumeView.GetRenderWindow().Render()
@@ -340,3 +338,8 @@ class VTKViewer(QWidget):
         self.reslice.SetResliceAxesOrigin(0, 0, self.slicePosition)
         self.reslice.Update()
         self.sliceView.GetRenderWindow().Render()
+
+    def setScalarOpacityUnitDist(self, opacity):
+        '''Sets scalar opacity unit distance value.'''
+        self.volume.GetProperty().SetScalarOpacityUnitDistance(opacity)
+        self.volumeView.GetRenderWindow().Render()
