@@ -78,6 +78,9 @@ class VesselSegApp(QObject):
             An integer representing the termination state.
         '''
         self.window.show()
+        if len(sys.argv) == 2:
+            self.loadFile(sys.argv[1])
+
         return self.qapp.exec_()
 
     def teardown(self):
