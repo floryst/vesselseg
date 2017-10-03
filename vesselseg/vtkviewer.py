@@ -232,6 +232,11 @@ class VTKViewer(QWidget):
         self.reslice.SetOutputDimensionality(2)
         self.reslice.SetInterpolationModeToLinear()
 
+        flip = vtk.vtkImageFlip()
+        # flip over y axis
+        flip.SetFilteredAxis(1)
+        flip.SetInputConnection(self.reslice.GetOutputPort())
+
         # create lookup table for intensity -> color
         table = vtk.vtkLookupTable()
         table.SetRange(vtkImageData.GetScalarRange())
@@ -244,7 +249,7 @@ class VTKViewer(QWidget):
         # map lookup table to colors
         colors = vtk.vtkImageMapToColors()
         colors.SetLookupTable(table)
-        colors.SetInputConnection(self.reslice.GetOutputPort())
+        colors.SetInputConnection(flip.GetOutputPort())
 
         actor = vtk.vtkImageActor()
         actor.GetMapper().SetInputConnection(colors.GetOutputPort())
@@ -258,8 +263,16 @@ class VTKViewer(QWidget):
 
     def showVolume(self, vtkImageData):
         '''Shows volume of image.'''
+        producer = vtk.vtkTrivialProducer()
+        producer.SetOutput(vtkImageData)
+
+        flip = vtk.vtkImageFlip()
+        # flip over y axis
+        flip.SetFilteredAxis(1)
+        flip.SetInputConnection(producer.GetOutputPort())
+
         mapper = vtk.vtkSmartVolumeMapper()
-        mapper.SetInputData(vtkImageData)
+        mapper.SetInputConnection(flip.GetOutputPort())
 
         scalarRange = vtkImageData.GetScalarRange()
 
