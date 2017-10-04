@@ -1,4 +1,5 @@
 import os
+import math
 
 from PyQt5.QtCore import QThread, QObject, pyqtSignal
 
@@ -293,6 +294,10 @@ class ViewManager(QObject):
         forwardSignal(window.filtersTabView(), self, 'windowLevelFilterChanged')
         forwardSignal(window.filtersTabView(), self, 'medianFilterChanged')
 
+        # 3D view
+        self.window.threeDTabView().scalarOpacityUnitDistChanged.connect(
+                self.window.vtkView().setScalarOpacityUnitDist)
+
     def disableUi(self):
         self.setUiState(False)
 
@@ -307,6 +312,15 @@ class ViewManager(QObject):
         '''Displays a VTK ImageData to the UI.'''
         self.window.vtkView().displayImage(vtkImage)
         self.window.infoTabView().showImageMetadata(vtkImage)
+
+        dims = vtkImage.GetDimensions()
+        spacing = vtkImage.GetSpacing()
+
+        scalarOpacityMax = math.sqrt(
+                (dims[0]*spacing[0])**2 +
+                (dims[1]*spacing[1])**2 +
+                (dims[2]*spacing[2])**2)
+        self.window.threeDTabView().setScalarOpacityRange(0, scalarOpacityMax)
 
     def displayTubes(self, tubeGroup):
         '''Display tubes in UI.'''

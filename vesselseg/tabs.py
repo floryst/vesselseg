@@ -237,3 +237,30 @@ class InfoTab(QLabel):
             'spacingZ': spacing[2],
         }
         self.setText(METADATA_TEMPLATE % props)
+
+class ThreeDTab(QWidget):
+    '''3D tab has controls for the volume renderer.'''
+
+    # signal
+    scalarOpacityUnitDistChanged = pyqtSignal(int)
+
+    def __init__(self, parent=None):
+        super(ThreeDTab, self).__init__(parent)
+
+        self.layout = QGridLayout(self)
+
+        self.opacitySlider = QSlider(Qt.Horizontal, self)
+        self.layout.addWidget(QLabel('Opacity Unit Distance'), 0, 0)
+        self.layout.addWidget(self.opacitySlider, 0, 1)
+
+        spacer = QSpacerItem(40, 20, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.layout.addItem(spacer, 1, 0)
+
+        self.opacitySlider.valueChanged.connect(
+                self.scalarOpacityUnitDistChanged)
+
+    def setScalarOpacityRange(self, minv, maxv):
+        '''Sets scalar opacity range.'''
+        self.opacitySlider.setMinimum(minv)
+        self.opacitySlider.setMaximum(maxv)
+        self.opacitySlider.setValue(maxv/15)

@@ -100,21 +100,28 @@ class MainWindow(QMainWindow):
         '''Getter for filters tab.'''
         return self.ui.filtersTab
 
+    def threeDTabView(self):
+        '''Getter for 3D tab.'''
+        return self.ui.threeDTab
+
 class Ui(QSplitter):
     def __init__(self, parent=None):
-        super(Ui, self).__init__(Qt.Horizontal, parent)
+        super(Ui, self).__init__(Qt.Vertical, parent)
+
+        self.vtkview = VTKViewer(self)
+        self.addWidget(self.vtkview)
 
         self.tabs = QTabWidget(self)
         self.addWidget(self.tabs)
 
-        self.segmentBox = QToolBox(self)
-        self.tabs.addTab(self.segmentBox, 'Segment')
+        self.infoTab = InfoTab(self)
+        self.tabs.addTab(self.infoTab, 'Info')
 
         self.filtersTab = FiltersTab(self)
-        self.segmentBox.addItem(self.filtersTab, "1. Filters")
+        self.tabs.addTab(self.filtersTab, 'Preprocessing')
 
         self.segmentTab = SegmentTab(self)
-        self.segmentBox.addItem(self.segmentTab, "2. Segment")
+        self.tabs.addTab(self.segmentTab, 'Organs/Tubes')
 
         self.tubeTreeTab = TubeTreeTab(self)
         self.tabs.addTab(self.tubeTreeTab, 'Tubes')
@@ -122,11 +129,8 @@ class Ui(QSplitter):
         self.selectionTab = SelectionTab(self)
         self.tabs.addTab(self.selectionTab, 'Selection')
 
-        self.infoTab = InfoTab(self)
-        self.tabs.addTab(self.infoTab, 'Info')
-
-        self.vtkview = VTKViewer(self)
-        self.addWidget(self.vtkview)
+        self.threeDTab = ThreeDTab(self)
+        self.tabs.addTab(self.threeDTab, '3D')
 
     def initVTK(self):
         '''Initializes the VTK renderers.'''
