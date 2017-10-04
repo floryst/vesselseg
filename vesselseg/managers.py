@@ -352,7 +352,8 @@ class ViewManager(QObject):
     def displayImage(self, imageManager):
         '''Displays a VTK ImageData to the UI.'''
         self.window.vtkView().displayImage(imageManager.vtkImage)
-        self.window.infoTabView().showImageMetadata(imageManager.vtkImage)
+        self.window.infoTabView().showImageMetadata(
+                imageManager.vtkImage, imageManager.filename)
 
         dims = imageManager.vtkImage.GetDimensions()
         spacing = imageManager.vtkImage.GetSpacing()

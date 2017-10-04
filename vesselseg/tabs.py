@@ -5,6 +5,7 @@ from PyQt5.QtGui import QDoubleValidator
 METADATA_TEMPLATE = \
 '''
 <strong>Image Properties</strong>
+<div>Filename: %(filename)s</div>
 <div>Dimensions: %(dimX).1f x %(dimY).1f x %(dimZ).1f</div>
 <div>Spacing: %(spacingX).3f x %(spacingY).3f x %(spacingZ).3f</div>
 '''
@@ -224,11 +225,12 @@ class InfoTab(QLabel):
 
         self.setAlignment(Qt.AlignTop)
 
-    def showImageMetadata(self, vtkImageData):
+    def showImageMetadata(self, vtkImageData, filename):
         '''Shows the image metadata.'''
         dims = vtkImageData.GetDimensions()
         spacing = vtkImageData.GetSpacing()
         props = {
+            'filename': filename,
             'dimX': dims[0],
             'dimY': dims[1],
             'dimZ': dims[2],
