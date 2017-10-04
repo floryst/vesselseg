@@ -315,6 +315,7 @@ class ViewManager(QObject):
 
         # main window
         forwardSignal(window, self, 'fileSelected')
+        forwardSignal(window.ui, self, 'viewedImageChanged')
 
         # vtk viewer
         forwardSignal(window.vtkView(), self, 'imageVoxelSelected')
@@ -433,6 +434,10 @@ class ViewManager(QObject):
         writer.SetFileName(filename.toLatin1().data())
         writer.SetInput(group)
         writer.Update()
+
+    def getViewedImageType(self):
+        '''Gets the currently viewed image type.'''
+        return self.window.ui.getViewedImageType()
 
 class SegmentManager(QObject):
     '''Manager of tube segmentation.'''

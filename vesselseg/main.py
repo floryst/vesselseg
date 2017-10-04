@@ -10,7 +10,9 @@ vtk.qt.QVTKRWIBase = 'QGLWidget'
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QObject
 from mainwindow import MainWindow
+from mainwindow import IMAGE_ORIGINAL, IMAGE_PREPROCESSED
 from managers import *
+import utils
 
 class VesselSegApp(QObject):
 
@@ -50,6 +52,8 @@ class VesselSegApp(QObject):
                 self.filterManager.setMedianParams)
         self.viewManager.medianFilterEnabled.connect(
                 self.filterManager.setMedianFilterEnabled)
+        self.viewManager.viewedImageChanged.connect(
+                self.changeViewedImage)
 
         # image manager
         self.imageManager.imageLoaded.connect(self.onImageLoaded)
@@ -107,6 +111,16 @@ class VesselSegApp(QObject):
                 imageManager.itkPixelType,
                 imageManager.dimension)
         self.resetTubeManager()
+
+    def changeViewedImage(self, imageType):
+        img = None
+        if imageType == IMAGE_ORIGINAL:
+            img = self.imageManager.vtkImage
+        elif imageType == IMAGE_PREPROCESSED:
+            img = utils.itkToVtkImage(self.filterManager.getOutput())
+        else:
+            raise Exception('Invalid image type to view: %s' % imageType)
+        self.viewManager.displayImage(img, self.imageManager.filename)
 
     def segmentTube(self, x, y, z):
         if self.viewManager.isSegmentEnabled():
