@@ -337,6 +337,7 @@ class ViewManager(QObject):
         forwardSignal(window.filtersTabView(), self, 'windowLevelFilterEnabled')
         forwardSignal(window.filtersTabView(), self, 'medianFilterChanged')
         forwardSignal(window.filtersTabView(), self, 'medianFilterEnabled')
+        forwardSignal(window.filtersTabView(), self, 'applyFiltersTriggered')
 
         # 3D view
         self.window.threeDTabView().scalarOpacityUnitDistChanged.connect(
@@ -540,6 +541,7 @@ class FilterManager(QObject):
         self.itkImage = None
         self.pixelType = None
         self.dimension = None
+        self.filteredImage = None
 
         # parameters
         self.window, self.level = 1, 0.5
@@ -565,7 +567,11 @@ class FilterManager(QObject):
         self.enabled = {name: False for name in self.filters.keys()}
 
     def getOutput(self):
-        '''Returns the filtered image, if any.'''
+        '''Returns the filtered image, or original if no cached filter image.'''
+        return self.filteredImage or self.itkImage
+
+    def update(self):
+        '''Updates filtered image.'''
         prevFilter = None
         curFilter = None
         for name in self.filters:
@@ -580,9 +586,13 @@ class FilterManager(QObject):
 
         if curFilter:
             curFilter.Update()
-            return curFilter.GetOutput()
+            self.filteredImage = curFilter.GetOutput()
+            # Make sure filteredImage.Update() doesn't update the whole
+            # pipeline. We only want explicit calls to self.update() to
+            # update the pipeline.
+            self.filteredImage.DisconnectPipeline()
         else:
-            return self.itkImage
+            self.filteredImage = self.itkImage
 
     def getOutputType(self):
         '''Returns the pixel type and dimension of output image.'''

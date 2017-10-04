@@ -54,6 +54,8 @@ class VesselSegApp(QObject):
                 self.filterManager.setMedianFilterEnabled)
         self.viewManager.viewedImageChanged.connect(
                 self.changeViewedImage)
+        self.viewManager.applyFiltersTriggered.connect(
+                self.applyImageFilters)
 
         # image manager
         self.imageManager.imageLoaded.connect(self.onImageLoaded)
@@ -121,6 +123,13 @@ class VesselSegApp(QObject):
         else:
             raise Exception('Invalid image type to view: %s' % imageType)
         self.viewManager.displayImage(img, self.imageManager.filename)
+
+    def applyImageFilters(self):
+        '''Updates filtered image'''
+        self.filterManager.update()
+        if self.viewManager.getViewedImageType() == IMAGE_PREPROCESSED:
+            # trigger display image again
+            self.changeViewedImage(IMAGE_PREPROCESSED)
 
     def segmentTube(self, x, y, z):
         if self.viewManager.isSegmentEnabled():

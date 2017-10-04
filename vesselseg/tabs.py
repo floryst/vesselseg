@@ -52,6 +52,8 @@ class FiltersTab(QWidget):
     medianFilterChanged = pyqtSignal(int)
     # signal: is median filter enabled
     medianFilterEnabled = pyqtSignal(bool)
+    # signal: apply filters
+    applyFiltersTriggered = pyqtSignal()
 
     def __init__(self, parent=None):
         super(FiltersTab, self).__init__(parent)
@@ -78,12 +80,16 @@ class FiltersTab(QWidget):
         spacer = QSpacerItem(40, 20, QSizePolicy.Minimum, QSizePolicy.Expanding)
         self.layout.addItem(spacer)
 
+        self.applyBtn = QPushButton('Apply', self)
+        self.layout.addWidget(self.applyBtn)
+
         self.windowLevelCheckbox.stateChanged.connect(
                 self.windowLevelStateChanged)
         self.medianCheckbox.stateChanged.connect(
                 self.toggleMedianFilter)
         self.medianRadiusInput.valueChanged.connect(
                 self.medianFilterChanged)
+        self.applyBtn.clicked.connect(self.applyFiltersTriggered)
 
     def windowLevelStateChanged(self, state):
         self.windowLevelFilterEnabled.emit(bool(state))
