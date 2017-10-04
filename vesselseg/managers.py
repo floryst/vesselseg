@@ -12,6 +12,21 @@ from models import TubeTreeViewModel, RAW_DATA_ROLE
 
 TUBE_ID_KEY = keys.MakeKey(keys.StringKey, 'tube.id', '')
 
+VTK_ITK_TYPE_CONVERSION = {
+    vtk.VTK_UNSIGNED_CHAR: itk.UC,
+    vtk.VTK_UNSIGNED_INT: itk.UI,
+    vtk.VTK_UNSIGNED_LONG: itk.UL,
+    # set this as a signed short for now. The python bindings
+    # don't have unsigned short :(
+    vtk.VTK_UNSIGNED_SHORT: itk.SS,
+    vtk.VTK_CHAR: itk.SC,
+    vtk.VTK_INT: itk.SI,
+    vtk.VTK_LONG: itk.SL,
+    vtk.VTK_SHORT: itk.SS,
+    vtk.VTK_FLOAT: itk.F,
+    vtk.VTK_DOUBLE: itk.D,
+}
+
 def forwardSignal(source, dest, signal):
     '''Forwards a Qt signal from source to dest.
 
@@ -30,12 +45,17 @@ class ImageManager(QObject):
     '''Manager for the loaded image.'''
 
     # signal: image file read and opened
-    imageLoaded = pyqtSignal(vtk.vtkImageData)
+    imageLoaded = pyqtSignal(QObject)
 
     def __init__(self, parent=None):
         super(ImageManager, self).__init__(parent)
 
-        self.imageData = None
+        self.filename = None
+        self.vtkImage = None
+        self.itkImage = None
+        self.itkPixelType = None
+        self.itkImageType = None
+        self.dimension = 0
 
     def loadImage(self, filename):
         '''Tries to load a given file.
@@ -43,15 +63,36 @@ class ImageManager(QObject):
         Returns:
             Boolean if file was loaded successfully.
         '''
+        self.filename = filename
+
+        # open as VTK image
         reader = vtk.vtkImageReader2Factory.CreateImageReader2(filename)
         if reader is None:
             return False
 
         reader.SetFileName(filename)
         reader.Update()
-        self.imageData = reader.GetOutput()
+        self.vtkImage = reader.GetOutput()
 
-        self.imageLoaded.emit(self.imageData)
+        # open as ITK image
+        if self.vtkImage.GetScalarType() not in VTK_ITK_TYPE_CONVERSION:
+            raise Exception(
+                    'Image type %d is unknown' % self.vtkImage.GetScalarType())
+
+        pixelType = VTK_ITK_TYPE_CONVERSION[self.vtkImage.GetScalarType()]
+        dimension = self.vtkImage.GetDataDimension()
+        imageType = itk.Image[pixelType, dimension]
+
+        reader = itk.ImageFileReader[imageType].New()
+        reader.SetFileName(filename)
+        reader.Update()
+
+        self.itkImage = reader.GetOutput()
+        self.itkPixelType = pixelType
+        self.dimension = dimension
+        self.itkImageType = imageType
+
+        self.imageLoaded.emit(self)
         return True
 
 class TubeManager(QObject):
@@ -308,13 +349,14 @@ class ViewManager(QObject):
         '''Sets the Ui enabled/disabled state.'''
         self.window.ui.setEnabled(state)
 
-    def displayImage(self, vtkImage):
+    def displayImage(self, imageManager):
         '''Displays a VTK ImageData to the UI.'''
-        self.window.vtkView().displayImage(vtkImage)
-        self.window.infoTabView().showImageMetadata(vtkImage)
+        self.window.vtkView().displayImage(imageManager.vtkImage)
+        self.window.infoTabView().showImageMetadata(
+                imageManager.vtkImage, imageManager.filename)
 
-        dims = vtkImage.GetDimensions()
-        spacing = vtkImage.GetSpacing()
+        dims = imageManager.vtkImage.GetDimensions()
+        spacing = imageManager.vtkImage.GetSpacing()
 
         scalarOpacityMax = math.sqrt(
                 (dims[0]*spacing[0])**2 +
@@ -436,9 +478,12 @@ class SegmentManager(QObject):
             scale = self.DEFAULT_SCALE
         self._scale = scale
 
-    def setImage(self, vtkImageData):
+    def setImage(self, imageManager):
         '''Sets segmenting image.'''
-        self.worker.setImage(vtkImageData)
+        self.worker.setImage(
+                imageManager.itkImage,
+                imageManager.itkPixelType,
+                imageManager.dimension)
 
     def setWindowLevel(self, enabled, window, level):
         '''Sets window and level for image.'''

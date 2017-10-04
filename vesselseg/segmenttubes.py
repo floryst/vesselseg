@@ -11,27 +11,6 @@ import itkExtras
 
 from PyQt5.QtCore import *
 
-from tomviz import itkutils
-
-VTK_ITK_TYPE_CONVERSION = {
-    vtk.VTK_UNSIGNED_CHAR: itkTypes.UC,
-    vtk.VTK_UNSIGNED_INT: itkTypes.UI,
-    vtk.VTK_UNSIGNED_LONG: itkTypes.UL,
-    # set this as a signed short for now. The python bindings
-    # don't have unsigned short :(
-    vtk.VTK_UNSIGNED_SHORT: itkTypes.SS,
-    vtk.VTK_CHAR: itkTypes.SC,
-    vtk.VTK_INT: itkTypes.SI,
-    vtk.VTK_LONG: itkTypes.SL,
-    vtk.VTK_SHORT: itkTypes.SS,
-    vtk.VTK_FLOAT: itkTypes.F,
-    vtk.VTK_DOUBLE: itkTypes.D,
-}
-
-
-class BusyException(Exception):
-    pass
-
 class SegmentArgs(object):
     '''Wrapper for segmentation arguments.'''
     scale = 2.0
@@ -45,7 +24,7 @@ class SegmentResult(object):
 class SegmentWorker(QObject):
     '''Threaded worker to perform tube segmentation.'''
 
-    SEGMENT, WINDOWLEVEL, MEDIAN = range(3)
+    IMAGE, SEGMENT, WINDOWLEVEL, MEDIAN = range(4)
 
     # signal: segmentation job finished
     jobFinished = pyqtSignal(SegmentResult)
@@ -73,19 +52,26 @@ class SegmentWorker(QObject):
             except Queue.Empty:
                 pass
             else:
+                if action == self.IMAGE:
+                    image, pixelType, dims = args
+                    self.segmenter.setImage(image, pixelType, dims)
+
                 if action == self.SEGMENT:
                     self.busyFlag = True
                     self._extractTube(args)
+
                 elif action == self.WINDOWLEVEL:
                     enabled, window, level = args
                     filter_ = self.segmenter.getFilter()
                     if filter_:
                         filter_.setWindowLevel(enabled, window, level)
+
                 elif action == self.MEDIAN:
                     enabled, radius = args
                     filter_ = self.segmenter.getFilter()
                     if filter_:
                         filter_.setMedianParams(enabled, radius)
+
                 self.busyFlag = not self.jobQueue.empty()
 
         # tell main thread that this worker has terminated
@@ -129,18 +115,15 @@ class SegmentWorker(QObject):
         '''Flag if worker is busy.'''
         return self.busyFlag
 
-    def setImage(self, vtkImage):
+    def setImage(self, itkImage, pixelType, dimension):
         '''Sets the image to process.
 
         Args:
-            vtkImage: input VTK image.
-
-        Raises:
-            segment_worker.BusyException: Cannot set input if currently busy.
+            itkImage: input ITK image.
+            pixelType: image pixel type.
+            dimension: image dimension.
         '''
-        if self.isBusy():
-            raise BusyException()
-        self.segmenter.setImage(vtkImage)
+        self.jobQueue.put((self.IMAGE, (itkImage, pixelType, dimension)))
 
     def getTubeGroup(self):
         '''Gets the extracted tube group, if any.
@@ -239,24 +222,14 @@ class SegmentTubes(object):
         self.scale = 2.0
         self.filter = None
 
-    def setImage(self, vtkImage):
+    def setImage(self, itkImage, pixelType, dimension):
         '''Sets the input image.
 
         Args:
-            vtkImage: a vtkImageData image object.
-
-        Raises:
-            Exception: could not convert VTK image to ITK image.
+            itkImage: a itkImage image object.
+            pixelType: pixel type for image.
+            dimension: image dimensions.
         '''
-        # convert vtkimage to itkimage
-        if vtkImage.GetScalarType() not in VTK_ITK_TYPE_CONVERSION:
-            raise Exception(
-                    'Image type %d is unknown' % vtkImage.GetScalarType())
-
-        pixelType = VTK_ITK_TYPE_CONVERSION[vtkImage.GetScalarType()]
-        dimension = vtkImage.GetDataDimension()
-        itkImage = itkutils.convert_vtk_to_itk_image(vtkImage, pixelType)
-
         self.itkImage = itkImage
         self.pixelType = pixelType
         self.dimension = dimension
