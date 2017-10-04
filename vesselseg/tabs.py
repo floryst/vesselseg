@@ -46,10 +46,12 @@ class TubeTreeTab(QTreeView):
 class FiltersTab(QWidget):
     '''Filters tab holds options for preprocessing the segment image.'''
 
-    # signal: window/level filter changed (enabled)
-    windowLevelFilterChanged = pyqtSignal(bool)
+    # signal: is window/level filter enabled
+    windowLevelFilterEnabled = pyqtSignal(bool)
     # signal: median filter state changed (enabled, radius)
-    medianFilterChanged = pyqtSignal(bool, int)
+    medianFilterChanged = pyqtSignal(int)
+    # signal: is median filter enabled
+    medianFilterEnabled = pyqtSignal(bool)
 
     def __init__(self, parent=None):
         super(FiltersTab, self).__init__(parent)
@@ -81,22 +83,14 @@ class FiltersTab(QWidget):
         self.medianCheckbox.stateChanged.connect(
                 self.toggleMedianFilter)
         self.medianRadiusInput.valueChanged.connect(
-                self.emitMedianFilterChanged)
+                self.medianFilterChanged)
 
     def windowLevelStateChanged(self, state):
-        self.windowLevelFilterChanged.emit(bool(state))
+        self.windowLevelFilterEnabled.emit(bool(state))
 
     def toggleMedianFilter(self, state):
         self.medianFilterParams.setEnabled(bool(state))
-        self.emitMedianFilterChanged()
-
-    def setMedianRadius(self, _):
-        self.emitMedianFilterChanged()
-
-    def emitMedianFilterChanged(self):
-        self.medianFilterChanged.emit(
-                self.medianCheckbox.isChecked(),
-                self.medianRadiusInput.value())
+        self.medianFilterEnabled.emit(bool(state))
 
 class SegmentTab(QWidget):
     '''Segment tab holds parameter inputs for segmentation.'''

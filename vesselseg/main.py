@@ -44,10 +44,12 @@ class VesselSegApp(QObject):
                 self.tubeManager.selectAllTubes)
         self.viewManager.windowLevelChanged.connect(
                 self.filterManager.setWindowLevel)
-        self.viewManager.windowLevelFilterChanged.connect(
-                self.filterManager.toggleWindowLevel)
+        self.viewManager.windowLevelFilterEnabled.connect(
+                self.filterManager.setWindowLevelEnabled)
         self.viewManager.medianFilterChanged.connect(
                 self.filterManager.setMedianParams)
+        self.viewManager.medianFilterEnabled.connect(
+                self.filterManager.setMedianFilterEnabled)
 
         # image manager
         self.imageManager.imageLoaded.connect(self.onImageLoaded)
@@ -64,10 +66,6 @@ class VesselSegApp(QObject):
                 self.viewManager.showTubeSelection)
 
         # filter manager
-        self.filterManager.windowLevelChanged.connect(
-                self.segmentManager.setWindowLevel)
-        self.filterManager.medianParamsChanged.connect(
-                self.segmentManager.setMedianParams)
 
     def run(self):
         '''Runs the application.
@@ -100,19 +98,24 @@ class VesselSegApp(QObject):
         '''Callback for when image is loaded.'''
         self.viewManager.displayImage(
                 imageManager.vtkImage, imageManager.filename)
-
         self.segmentManager.setImage(
                 imageManager.itkImage,
                 imageManager.itkPixelType,
                 imageManager.dimension)
-
+        self.filterManager.setImage(
+                imageManager.itkImage,
+                imageManager.itkPixelType,
+                imageManager.dimension)
         self.resetTubeManager()
 
     def segmentTube(self, x, y, z):
         if self.viewManager.isSegmentEnabled():
+            self.segmentManager.setImage(
+                    self.filterManager.getOutput(),
+                    *self.filterManager.getOutputType())
             self.segmentManager.segmentTube(x, y, z)
 
-    def resetTubeManager(self, _):
+    def resetTubeManager(self):
         '''Resets tube manager.'''
         self.tubeManager.reset()
 

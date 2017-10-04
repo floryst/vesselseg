@@ -1,5 +1,6 @@
 import os
 import math
+import collections
 
 from PyQt5.QtCore import QThread, QObject, pyqtSignal
 
@@ -332,8 +333,9 @@ class ViewManager(QObject):
         forwardSignal(window.tubeTreeTabView(), self, 'saveTubesClicked')
 
         # filters
-        forwardSignal(window.filtersTabView(), self, 'windowLevelFilterChanged')
+        forwardSignal(window.filtersTabView(), self, 'windowLevelFilterEnabled')
         forwardSignal(window.filtersTabView(), self, 'medianFilterChanged')
+        forwardSignal(window.filtersTabView(), self, 'medianFilterEnabled')
 
         # 3D view
         self.window.threeDTabView().scalarOpacityUnitDistChanged.connect(
@@ -515,34 +517,111 @@ class SegmentManager(QObject):
 class FilterManager(QObject):
     '''Manages filter parameters.'''
 
+    WINDOWLEVEL = 'Window/Level'
+    MEDIAN = 'Median'
+
+    # signal: is window/level filter enabled
+    windowLevelEnabled = pyqtSignal(bool)
     # signal: Window/Level params changed
-    windowLevelChanged = pyqtSignal(bool, float, float)
+    windowLevelChanged = pyqtSignal(float, float)
+    # signal: is median filter enabled
+    medianFilterEnabled = pyqtSignal(bool)
     # signal: median filter params changed
-    medianParamsChanged = pyqtSignal(bool, int)
+    medianFilterChanged = pyqtSignal(int)
 
     def __init__(self, parent=None):
         super(FilterManager, self).__init__(parent)
 
-        self.window, self.level = 1, 0.5
-        self.windowLevelEnabled = False
+        self.itkImage = None
+        self.pixelType = None
+        self.dimension = None
 
-        self.medianEnabled = False
+        # parameters
+        self.window, self.level = 1, 0.5
         self.medianRadius = 0
 
-    def toggleWindowLevel(self, enabled):
+        self.filters = collections.OrderedDict()
+        self.enabled = dict()
+
+    def setImage(self, itkImage, pixelType, dimension):
+        '''Sets input itk image.'''
+        self.itkImage = itkImage
+        self.pixelType = pixelType
+        self.dimension = dimension
+
+        # setup the filters
+        imageType = itk.Image[pixelType, dimension]
+        self.filters = collections.OrderedDict([
+            (self.WINDOWLEVEL,
+                itk.IntensityWindowingImageFilter[imageType, imageType].New()),
+            (self.MEDIAN,
+                itk.MedianImageFilter[imageType, imageType].New()),
+        ])
+        self.enabled = {name: False for name in self.filters.keys()}
+
+    def getOutput(self):
+        '''Returns the filtered image, if any.'''
+        prevFilter = None
+        curFilter = None
+        for name in self.filters:
+            if self.enabled[name]:
+                curFilter = self.filters[name]
+                if prevFilter is None:
+                    curFilter.SetInput(self.itkImage)
+                else:
+                    prevFilter.Update()
+                    curFilter.SetInput(prevFilter.GetOutput())
+                prevFilter = curFilter
+
+        if curFilter:
+            curFilter.Update()
+            return curFilter.GetOutput()
+        else:
+            return self.itkImage
+
+    def getOutputType(self):
+        '''Returns the pixel type and dimension of output image.'''
+        return self.pixelType, self.dimension
+
+    def setWindowLevelEnabled(self, enabled):
         '''Toggles window/level filter.'''
-        self.windowLevelEnabled = enabled
-        self.windowLevelChanged.emit(
-                self.windowLevelEnabled, self.window, self.level)
+        self.enabled[self.WINDOWLEVEL] = enabled
+        self.windowLevelEnabled.emit(enabled)
 
     def setWindowLevel(self, window, level):
+        '''Sets window/level params.'''
         self.window = window
         self.level = level
-        self.windowLevelChanged.emit(
-                self.windowLevelEnabled, self.window, self.level)
 
-    def setMedianParams(self, enabled, radius):
+        filter_ = self.filters[self.WINDOWLEVEL]
+
+        minValue = itk.NumericTraits[self.pixelType].min()
+        maxValue = itk.NumericTraits[self.pixelType].max()
+        valRange = maxValue - minValue
+
+        window = window*valRange + minValue
+        level = level*valRange + minValue
+
+        filter_.SetWindowLevel(
+                int(min(maxValue, max(minValue, window))),
+                int(min(maxValue, max(minValue, level))))
+        filter_.SetOutputMinimum(minValue)
+        filter_.SetOutputMaximum(maxValue)
+        # tell Update() that something has changed
+        filter_.Modified()
+
+        self.windowLevelChanged.emit(self.window, self.level)
+
+    def setMedianFilterEnabled(self, enabled):
+        '''Toggles median filter.'''
+        self.enabled[self.MEDIAN] = enabled
+        self.medianFilterEnabled.emit(enabled)
+
+    def setMedianParams(self, radius):
         '''Sets median filter state and params.'''
-        self.medianEnabled = enabled
         self.medianRadius = radius
-        self.medianParamsChanged.emit(enabled, radius)
+
+        filter_ = self.filters[self.MEDIAN]
+        filter_.SetRadius(radius)
+
+        self.medianFilterChanged.emit(radius)
