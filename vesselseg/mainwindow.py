@@ -4,6 +4,9 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from tabs import *
 from vtkviewer import VTKViewer
 
+IMAGE_ORIGINAL = 'Original'
+IMAGE_PREPROCESSED = 'Preprocessed'
+
 class MainWindow(QMainWindow):
 
     # signal: file was selected for loading
@@ -105,8 +108,28 @@ class MainWindow(QMainWindow):
         return self.ui.threeDTab
 
 class Ui(QSplitter):
+
+    VIEWABLE_IMAGES = [
+        IMAGE_ORIGINAL,
+        IMAGE_PREPROCESSED,
+    ]
+
+    # signal: viewed image type changed
+    viewedImageChanged = pyqtSignal(str)
+
     def __init__(self, parent=None):
         super(Ui, self).__init__(Qt.Vertical, parent)
+
+        self.toolbar = QWidget(self)
+        self.addWidget(self.toolbar)
+
+        self.viewedImageCombo = QComboBox(self)
+        self.viewedImageCombo.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.toolbarLayout = QHBoxLayout(self.toolbar)
+        self.toolbarLayout.addWidget(self.viewedImageCombo, 0, Qt.AlignLeft)
+
+        for viewableImage in self.VIEWABLE_IMAGES:
+            self.viewedImageCombo.addItem(viewableImage)
 
         self.vtkview = VTKViewer(self)
         self.addWidget(self.vtkview)
@@ -132,6 +155,16 @@ class Ui(QSplitter):
         self.threeDTab = ThreeDTab(self)
         self.tabs.addTab(self.threeDTab, '3D')
 
+        self.viewedImageCombo.activated.connect(self.onChangeViewedImage)
+
     def initVTK(self):
         '''Initializes the VTK renderers.'''
         self.vtkview.initRenderers()
+
+    def onChangeViewedImage(self, index):
+        '''Slot for changing viewed image.'''
+        self.viewedImageChanged.emit(self.VIEWABLE_IMAGES[index])
+
+    def getViewedImageType(self):
+        '''Gets the viewed image type.'''
+        return self.VIEWABLE_IMAGES[self.viewedImageCombo.currentIndex()]
