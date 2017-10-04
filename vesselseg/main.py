@@ -50,9 +50,7 @@ class VesselSegApp(QObject):
                 self.filterManager.setMedianParams)
 
         # image manager
-        self.imageManager.imageLoaded.connect(self.viewManager.displayImage)
-        self.imageManager.imageLoaded.connect(self.segmentManager.setImage)
-        self.imageManager.imageLoaded.connect(self.resetTubeManager)
+        self.imageManager.imageLoaded.connect(self.onImageLoaded)
 
         # segment manager
         self.segmentManager.tubeSegmented.connect(
@@ -97,6 +95,18 @@ class VesselSegApp(QObject):
         else:
             self.viewManager.alert('File %s could not opened' % filename)
         progress.close()
+
+    def onImageLoaded(self, imageManager):
+        '''Callback for when image is loaded.'''
+        self.viewManager.displayImage(
+                imageManager.vtkImage, imageManager.filename)
+
+        self.segmentManager.setImage(
+                imageManager.itkImage,
+                imageManager.itkPixelType,
+                imageManager.dimension)
+
+        self.resetTubeManager()
 
     def segmentTube(self, x, y, z):
         if self.viewManager.isSegmentEnabled():

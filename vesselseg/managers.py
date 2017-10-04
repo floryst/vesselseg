@@ -349,14 +349,13 @@ class ViewManager(QObject):
         '''Sets the Ui enabled/disabled state.'''
         self.window.ui.setEnabled(state)
 
-    def displayImage(self, imageManager):
+    def displayImage(self, vtkImage, filename):
         '''Displays a VTK ImageData to the UI.'''
-        self.window.vtkView().displayImage(imageManager.vtkImage)
-        self.window.infoTabView().showImageMetadata(
-                imageManager.vtkImage, imageManager.filename)
+        self.window.vtkView().displayImage(vtkImage)
+        self.window.infoTabView().showImageMetadata(vtkImage, filename)
 
-        dims = imageManager.vtkImage.GetDimensions()
-        spacing = imageManager.vtkImage.GetSpacing()
+        dims = vtkImage.GetDimensions()
+        spacing = vtkImage.GetSpacing()
 
         scalarOpacityMax = math.sqrt(
                 (dims[0]*spacing[0])**2 +
@@ -478,12 +477,9 @@ class SegmentManager(QObject):
             scale = self.DEFAULT_SCALE
         self._scale = scale
 
-    def setImage(self, imageManager):
+    def setImage(self, image, pixelType, dimension):
         '''Sets segmenting image.'''
-        self.worker.setImage(
-                imageManager.itkImage,
-                imageManager.itkPixelType,
-                imageManager.dimension)
+        self.worker.setImage(image, pixelType, dimension)
 
     def setWindowLevel(self, enabled, window, level):
         '''Sets window and level for image.'''
