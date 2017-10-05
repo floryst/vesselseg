@@ -157,6 +157,13 @@ class Ui(QSplitter):
 
         self.viewedImageCombo.activated.connect(self.onChangeViewedImage)
 
+    def reset(self):
+        '''Resets certain UI elements.'''
+        # 0th index should be original image
+        self.viewedImageCombo.setCurrentIndex(0)
+        self.filtersTab.reset()
+        self.segmentTab.reset()
+
     def initVTK(self):
         '''Initializes the VTK renderers.'''
         self.vtkview.initRenderers()

@@ -353,6 +353,10 @@ class ViewManager(QObject):
         '''Sets the Ui enabled/disabled state.'''
         self.window.ui.setEnabled(state)
 
+    def reset(self):
+        '''Reset certain tabs and UI elements to vanilla state.'''
+        self.window.ui.reset()
+
     def displayImage(self, vtkImage, filename, preserveState=False):
         '''Displays a VTK ImageData to the UI.'''
         self.window.vtkView().displayImage(vtkImage, preserveState)

@@ -73,8 +73,6 @@ class FiltersTab(QWidget):
         self.medianFilterParams.setLayout(self.medianFilterForm)
         self.medianRadiusInput = QSpinBox(self)
         self.medianFilterForm.addRow('Radius:', self.medianRadiusInput)
-
-        self.medianFilterParams.setEnabled(False)
         self.layout.addWidget(self.medianFilterParams)
 
         spacer = QSpacerItem(40, 20, QSizePolicy.Minimum, QSizePolicy.Expanding)
@@ -91,12 +89,20 @@ class FiltersTab(QWidget):
                 self.medianFilterChanged)
         self.applyBtn.clicked.connect(self.applyFiltersTriggered)
 
+        self.reset()
+
     def windowLevelStateChanged(self, state):
         self.windowLevelFilterEnabled.emit(bool(state))
 
     def toggleMedianFilter(self, state):
         self.medianFilterParams.setEnabled(bool(state))
         self.medianFilterEnabled.emit(bool(state))
+
+    def reset(self):
+        '''Resets the filter parameter inputs.'''
+        self.medianRadiusInput.setValue(0)
+        self.medianCheckbox.setChecked(False)
+        self.windowLevelCheckbox.setChecked(False)
 
 class SegmentTab(QWidget):
     '''Segment tab holds parameter inputs for segmentation.'''
@@ -175,6 +181,10 @@ class SegmentTab(QWidget):
     def isSegmentEnabled(self):
         '''Checks if segmentation is enabled.'''
         return self.segmentBtn.isChecked()
+
+    def reset(self):
+        '''Resets the segment tube box.'''
+        self.segmentBtn.setChecked(False)
 
 class SelectionTab(QWidget):
     '''Shows tube selection.'''

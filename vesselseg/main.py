@@ -102,6 +102,7 @@ class VesselSegApp(QObject):
 
     def onImageLoaded(self, imageManager):
         '''Callback for when image is loaded.'''
+        self.viewManager.reset()
         self.viewManager.displayImage(
                 imageManager.vtkImage, imageManager.filename)
         self.segmentManager.setImage(
