@@ -1,5 +1,6 @@
 import os
 import math
+import collections
 
 from PyQt5.QtCore import QThread, QObject, pyqtSignal
 
@@ -314,6 +315,7 @@ class ViewManager(QObject):
 
         # main window
         forwardSignal(window, self, 'fileSelected')
+        forwardSignal(window.ui, self, 'viewedImageChanged')
 
         # vtk viewer
         forwardSignal(window.vtkView(), self, 'imageVoxelSelected')
@@ -332,8 +334,10 @@ class ViewManager(QObject):
         forwardSignal(window.tubeTreeTabView(), self, 'saveTubesClicked')
 
         # filters
-        forwardSignal(window.filtersTabView(), self, 'windowLevelFilterChanged')
+        forwardSignal(window.filtersTabView(), self, 'windowLevelFilterEnabled')
         forwardSignal(window.filtersTabView(), self, 'medianFilterChanged')
+        forwardSignal(window.filtersTabView(), self, 'medianFilterEnabled')
+        forwardSignal(window.filtersTabView(), self, 'applyFiltersTriggered')
 
         # 3D view
         self.window.threeDTabView().scalarOpacityUnitDistChanged.connect(
@@ -349,20 +353,26 @@ class ViewManager(QObject):
         '''Sets the Ui enabled/disabled state.'''
         self.window.ui.setEnabled(state)
 
-    def displayImage(self, imageManager):
-        '''Displays a VTK ImageData to the UI.'''
-        self.window.vtkView().displayImage(imageManager.vtkImage)
-        self.window.infoTabView().showImageMetadata(
-                imageManager.vtkImage, imageManager.filename)
+    def reset(self):
+        '''Reset certain tabs and UI elements to vanilla state.'''
+        self.window.ui.reset()
 
-        dims = imageManager.vtkImage.GetDimensions()
-        spacing = imageManager.vtkImage.GetSpacing()
+    def displayImage(self, vtkImage, filename, preserveState=False):
+        '''Displays a VTK ImageData to the UI.'''
+        self.window.vtkView().displayImage(vtkImage, preserveState)
+        self.window.infoTabView().showImageMetadata(vtkImage, filename)
+
+        dims = vtkImage.GetDimensions()
+        spacing = vtkImage.GetSpacing()
 
         scalarOpacityMax = math.sqrt(
                 (dims[0]*spacing[0])**2 +
                 (dims[1]*spacing[1])**2 +
                 (dims[2]*spacing[2])**2)
-        self.window.threeDTabView().setScalarOpacityRange(0, scalarOpacityMax)
+        self.window.threeDTabView().setScalarOpacityRange(
+                0, scalarOpacityMax)
+        if not preserveState:
+            self.window.threeDTabView().setScalarOpacity(scalarOpacityMax/15)
 
     def displayTubes(self, tubeGroup):
         '''Display tubes in UI.'''
@@ -433,6 +443,10 @@ class ViewManager(QObject):
         writer.SetInput(group)
         writer.Update()
 
+    def getViewedImageType(self):
+        '''Gets the currently viewed image type.'''
+        return self.window.ui.getViewedImageType()
+
 class SegmentManager(QObject):
     '''Manager of tube segmentation.'''
 
@@ -478,12 +492,9 @@ class SegmentManager(QObject):
             scale = self.DEFAULT_SCALE
         self._scale = scale
 
-    def setImage(self, imageManager):
+    def setImage(self, image, pixelType, dimension):
         '''Sets segmenting image.'''
-        self.worker.setImage(
-                imageManager.itkImage,
-                imageManager.itkPixelType,
-                imageManager.dimension)
+        self.worker.setImage(image, pixelType, dimension)
 
     def setWindowLevel(self, enabled, window, level):
         '''Sets window and level for image.'''
@@ -519,34 +530,125 @@ class SegmentManager(QObject):
 class FilterManager(QObject):
     '''Manages filter parameters.'''
 
+    WINDOWLEVEL = 'Window/Level'
+    MEDIAN = 'Median'
+
+    # signal: is window/level filter enabled
+    windowLevelEnabled = pyqtSignal(bool)
     # signal: Window/Level params changed
-    windowLevelChanged = pyqtSignal(bool, float, float)
+    windowLevelChanged = pyqtSignal(float, float)
+    # signal: is median filter enabled
+    medianFilterEnabled = pyqtSignal(bool)
     # signal: median filter params changed
-    medianParamsChanged = pyqtSignal(bool, int)
+    medianFilterChanged = pyqtSignal(int)
 
     def __init__(self, parent=None):
         super(FilterManager, self).__init__(parent)
 
-        self.window, self.level = 1, 0.5
-        self.windowLevelEnabled = False
+        self.itkImage = None
+        self.pixelType = None
+        self.dimension = None
+        self.filteredImage = None
 
-        self.medianEnabled = False
+        # parameters
+        self.window, self.level = 1, 0.5
         self.medianRadius = 0
 
-    def toggleWindowLevel(self, enabled):
+        self.filters = collections.OrderedDict()
+        self.enabled = dict()
+
+    def setImage(self, itkImage, pixelType, dimension):
+        '''Sets input itk image.'''
+        self.itkImage = itkImage
+        self.filteredImage = itkImage
+        self.pixelType = pixelType
+        self.dimension = dimension
+
+        # setup the filters
+        imageType = itk.Image[pixelType, dimension]
+        self.filters = collections.OrderedDict([
+            (self.WINDOWLEVEL,
+                itk.IntensityWindowingImageFilter[imageType, imageType].New()),
+            (self.MEDIAN,
+                itk.MedianImageFilter[imageType, imageType].New()),
+        ])
+        self.enabled = {name: False for name in self.filters.keys()}
+
+    def getOutput(self):
+        '''Returns the filtered image, or original if no cached filter image.'''
+        return self.filteredImage or self.itkImage
+
+    def update(self):
+        '''Updates filtered image.'''
+        prevFilter = None
+        curFilter = None
+        for name in self.filters:
+            if self.enabled[name]:
+                curFilter = self.filters[name]
+                if prevFilter is None:
+                    curFilter.SetInput(self.itkImage)
+                else:
+                    prevFilter.Update()
+                    curFilter.SetInput(prevFilter.GetOutput())
+                prevFilter = curFilter
+
+        if curFilter:
+            curFilter.Update()
+            self.filteredImage = curFilter.GetOutput()
+            # Make sure filteredImage.Update() doesn't update the whole
+            # pipeline. We only want explicit calls to self.update() to
+            # update the pipeline.
+            self.filteredImage.DisconnectPipeline()
+        else:
+            self.filteredImage = self.itkImage
+
+    def getOutputType(self):
+        '''Returns the pixel type and dimension of output image.'''
+        return self.pixelType, self.dimension
+
+    def setWindowLevelEnabled(self, enabled):
         '''Toggles window/level filter.'''
-        self.windowLevelEnabled = enabled
-        self.windowLevelChanged.emit(
-                self.windowLevelEnabled, self.window, self.level)
+        self.enabled[self.WINDOWLEVEL] = enabled
+        self.windowLevelEnabled.emit(enabled)
 
     def setWindowLevel(self, window, level):
+        '''Sets window/level params.'''
         self.window = window
         self.level = level
-        self.windowLevelChanged.emit(
-                self.windowLevelEnabled, self.window, self.level)
+        # assume window/level are supposed to be an unsigned char
+        # look at the vtkImageMapper source code
+        window = min(1.0, max(0.0, window/255.0))
+        level = min(1.0, max(0.0, level/255.0))
 
-    def setMedianParams(self, enabled, radius):
+        filter_ = self.filters[self.WINDOWLEVEL]
+
+        minValue = itk.NumericTraits[self.pixelType].min()
+        maxValue = itk.NumericTraits[self.pixelType].max()
+        valRange = maxValue - minValue
+
+        window = window*valRange + minValue
+        level = level*valRange + minValue
+
+        filter_.SetWindowLevel(
+                int(min(maxValue, max(minValue, window))),
+                int(min(maxValue, max(minValue, level))))
+        filter_.SetOutputMinimum(minValue)
+        filter_.SetOutputMaximum(maxValue)
+        # tell Update() that something has changed
+        filter_.Modified()
+
+        self.windowLevelChanged.emit(self.window, self.level)
+
+    def setMedianFilterEnabled(self, enabled):
+        '''Toggles median filter.'''
+        self.enabled[self.MEDIAN] = enabled
+        self.medianFilterEnabled.emit(enabled)
+
+    def setMedianParams(self, radius):
         '''Sets median filter state and params.'''
-        self.medianEnabled = enabled
         self.medianRadius = radius
-        self.medianParamsChanged.emit(enabled, radius)
+
+        filter_ = self.filters[self.MEDIAN]
+        filter_.SetRadius(radius)
+
+        self.medianFilterChanged.emit(radius)

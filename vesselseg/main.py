@@ -10,7 +10,9 @@ vtk.qt.QVTKRWIBase = 'QGLWidget'
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QObject
 from mainwindow import MainWindow
+from mainwindow import IMAGE_ORIGINAL, IMAGE_PREPROCESSED
 from managers import *
+import utils
 
 class VesselSegApp(QObject):
 
@@ -44,15 +46,19 @@ class VesselSegApp(QObject):
                 self.tubeManager.selectAllTubes)
         self.viewManager.windowLevelChanged.connect(
                 self.filterManager.setWindowLevel)
-        self.viewManager.windowLevelFilterChanged.connect(
-                self.filterManager.toggleWindowLevel)
+        self.viewManager.windowLevelFilterEnabled.connect(
+                self.filterManager.setWindowLevelEnabled)
         self.viewManager.medianFilterChanged.connect(
                 self.filterManager.setMedianParams)
+        self.viewManager.medianFilterEnabled.connect(
+                self.filterManager.setMedianFilterEnabled)
+        self.viewManager.viewedImageChanged.connect(
+                self.changeViewedImage)
+        self.viewManager.applyFiltersTriggered.connect(
+                self.applyImageFilters)
 
         # image manager
-        self.imageManager.imageLoaded.connect(self.viewManager.displayImage)
-        self.imageManager.imageLoaded.connect(self.segmentManager.setImage)
-        self.imageManager.imageLoaded.connect(self.resetTubeManager)
+        self.imageManager.imageLoaded.connect(self.onImageLoaded)
 
         # segment manager
         self.segmentManager.tubeSegmented.connect(
@@ -66,10 +72,6 @@ class VesselSegApp(QObject):
                 self.viewManager.showTubeSelection)
 
         # filter manager
-        self.filterManager.windowLevelChanged.connect(
-                self.segmentManager.setWindowLevel)
-        self.filterManager.medianParamsChanged.connect(
-                self.segmentManager.setMedianParams)
 
     def run(self):
         '''Runs the application.
@@ -98,11 +100,49 @@ class VesselSegApp(QObject):
             self.viewManager.alert('File %s could not opened' % filename)
         progress.close()
 
+    def onImageLoaded(self, imageManager):
+        '''Callback for when image is loaded.'''
+        self.viewManager.reset()
+        self.viewManager.displayImage(
+                imageManager.vtkImage, imageManager.filename)
+        self.segmentManager.setImage(
+                imageManager.itkImage,
+                imageManager.itkPixelType,
+                imageManager.dimension)
+        self.filterManager.setImage(
+                imageManager.itkImage,
+                imageManager.itkPixelType,
+                imageManager.dimension)
+        self.resetTubeManager()
+
+    def changeViewedImage(self, imageType):
+        img = None
+        if imageType == IMAGE_ORIGINAL:
+            img = self.imageManager.vtkImage
+        elif imageType == IMAGE_PREPROCESSED:
+            img = utils.itkToVtkImage(self.filterManager.getOutput())
+        else:
+            raise Exception('Invalid image type to view: %s' % imageType)
+        self.viewManager.displayImage(img, self.imageManager.filename, True)
+
+    def applyImageFilters(self):
+        '''Updates filtered image'''
+        progress = self.viewManager.makeProgressDialog('Preprocessing...')
+        self.filterManager.update()
+        progress.close()
+
+        if self.viewManager.getViewedImageType() == IMAGE_PREPROCESSED:
+            # trigger display image again
+            self.changeViewedImage(IMAGE_PREPROCESSED)
+
     def segmentTube(self, x, y, z):
         if self.viewManager.isSegmentEnabled():
+            self.segmentManager.setImage(
+                    self.filterManager.getOutput(),
+                    *self.filterManager.getOutputType())
             self.segmentManager.segmentTube(x, y, z)
 
-    def resetTubeManager(self, _):
+    def resetTubeManager(self):
         '''Resets tube manager.'''
         self.tubeManager.reset()
 

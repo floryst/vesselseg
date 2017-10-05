@@ -46,10 +46,14 @@ class TubeTreeTab(QTreeView):
 class FiltersTab(QWidget):
     '''Filters tab holds options for preprocessing the segment image.'''
 
-    # signal: window/level filter changed (enabled)
-    windowLevelFilterChanged = pyqtSignal(bool)
+    # signal: is window/level filter enabled
+    windowLevelFilterEnabled = pyqtSignal(bool)
     # signal: median filter state changed (enabled, radius)
-    medianFilterChanged = pyqtSignal(bool, int)
+    medianFilterChanged = pyqtSignal(int)
+    # signal: is median filter enabled
+    medianFilterEnabled = pyqtSignal(bool)
+    # signal: apply filters
+    applyFiltersTriggered = pyqtSignal()
 
     def __init__(self, parent=None):
         super(FiltersTab, self).__init__(parent)
@@ -69,34 +73,42 @@ class FiltersTab(QWidget):
         self.medianFilterParams.setLayout(self.medianFilterForm)
         self.medianRadiusInput = QSpinBox(self)
         self.medianFilterForm.addRow('Radius:', self.medianRadiusInput)
-
-        self.medianFilterParams.setEnabled(False)
         self.layout.addWidget(self.medianFilterParams)
 
         spacer = QSpacerItem(40, 20, QSizePolicy.Minimum, QSizePolicy.Expanding)
         self.layout.addItem(spacer)
+
+        self.applyBtn = QPushButton('Apply', self)
+        self.layout.addWidget(self.applyBtn)
 
         self.windowLevelCheckbox.stateChanged.connect(
                 self.windowLevelStateChanged)
         self.medianCheckbox.stateChanged.connect(
                 self.toggleMedianFilter)
         self.medianRadiusInput.valueChanged.connect(
-                self.emitMedianFilterChanged)
+                self.medianFilterChanged)
+        self.applyBtn.clicked.connect(self.applyFiltersTriggered)
+
+        self.reset()
 
     def windowLevelStateChanged(self, state):
-        self.windowLevelFilterChanged.emit(bool(state))
+        self.windowLevelFilterEnabled.emit(bool(state))
 
     def toggleMedianFilter(self, state):
         self.medianFilterParams.setEnabled(bool(state))
-        self.emitMedianFilterChanged()
+        self.medianFilterEnabled.emit(bool(state))
 
-    def setMedianRadius(self, _):
-        self.emitMedianFilterChanged()
+    def reset(self):
+        '''Resets the filter parameter inputs.'''
+        self.medianRadiusInput.setValue(0)
+        self.medianCheckbox.setChecked(False)
+        self.windowLevelCheckbox.setChecked(False)
 
-    def emitMedianFilterChanged(self):
-        self.medianFilterChanged.emit(
-                self.medianCheckbox.isChecked(),
-                self.medianRadiusInput.value())
+        # setChecked doesn't emit stateChanged, so must do this manually.
+        # NOTE: This emits regardless if state was already unchecked. This
+        # can be tied to FilterManager's state, but for now this is here.
+        self.windowLevelCheckbox.stateChanged.emit(False)
+        self.medianCheckbox.stateChanged.emit(False)
 
 class SegmentTab(QWidget):
     '''Segment tab holds parameter inputs for segmentation.'''
@@ -175,6 +187,10 @@ class SegmentTab(QWidget):
     def isSegmentEnabled(self):
         '''Checks if segmentation is enabled.'''
         return self.segmentBtn.isChecked()
+
+    def reset(self):
+        '''Resets the segment tube box.'''
+        self.segmentBtn.setChecked(False)
 
 class SelectionTab(QWidget):
     '''Shows tube selection.'''
@@ -265,4 +281,7 @@ class ThreeDTab(QWidget):
         '''Sets scalar opacity range.'''
         self.opacitySlider.setMinimum(minv)
         self.opacitySlider.setMaximum(maxv)
-        self.opacitySlider.setValue(maxv/15)
+
+    def setScalarOpacity(self, value):
+        '''Sets scalar opacity unit distance.'''
+        self.opacitySlider.setValue(value)

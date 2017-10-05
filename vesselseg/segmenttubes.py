@@ -1,6 +1,5 @@
 import copy
 import Queue
-import collections
 from math import ceil, floor
 from StringIO import StringIO
 
@@ -24,7 +23,7 @@ class SegmentResult(object):
 class SegmentWorker(QObject):
     '''Threaded worker to perform tube segmentation.'''
 
-    IMAGE, SEGMENT, WINDOWLEVEL, MEDIAN = range(4)
+    IMAGE, SEGMENT = range(2)
 
     # signal: segmentation job finished
     jobFinished = pyqtSignal(SegmentResult)
@@ -60,18 +59,6 @@ class SegmentWorker(QObject):
                     self.busyFlag = True
                     self._extractTube(args)
 
-                elif action == self.WINDOWLEVEL:
-                    enabled, window, level = args
-                    filter_ = self.segmenter.getFilter()
-                    if filter_:
-                        filter_.setWindowLevel(enabled, window, level)
-
-                elif action == self.MEDIAN:
-                    enabled, radius = args
-                    filter_ = self.segmenter.getFilter()
-                    if filter_:
-                        filter_.setMedianParams(enabled, radius)
-
                 self.busyFlag = not self.jobQueue.empty()
 
         # tell main thread that this worker has terminated
@@ -94,14 +81,6 @@ class SegmentWorker(QObject):
         '''
         # make deepcopy to prevent modification via references
         self.jobQueue.put((self.SEGMENT, copy.deepcopy(args)))
-
-    def setWindowLevel(self, enabled, window, level):
-        '''Sets window/level for image.'''
-        self.jobQueue.put((self.WINDOWLEVEL, (enabled, window, level)))
-
-    def setMedianParams(self, enabled, radius):
-        '''Sets window/level for image.'''
-        self.jobQueue.put((self.MEDIAN, (enabled, radius)))
 
     def stop(self):
         '''Tell this worker to stop when possible.'''
@@ -134,77 +113,6 @@ class SegmentWorker(QObject):
         '''
         return self.segmenter.getTubeGroup()
 
-class SegmentImageFilter(object):
-    '''Constructs image filter.'''
-
-    WINDOWLEVEL = 'Window/Level'
-    MEDIAN = 'Median'
-
-    def __init__(self, image, imageType, pixelType):
-        self.inputImage = image
-        self.imageType = imageType
-        self.pixelType = pixelType
-
-        # filters are processed in list order
-        self.filters = collections.OrderedDict([
-            (self.WINDOWLEVEL,
-                itk.IntensityWindowingImageFilter[imageType, imageType].New()),
-            (self.MEDIAN,
-                itk.MedianImageFilter[imageType, imageType].New()),
-        ])
-        self.enabled = {name: False for name in self.filters.keys()}
-
-    def getOutput(self):
-        '''Returns the filtered image.'''
-        prevFilter = None
-        curFilter = None
-        for name in self.filters:
-            if self.enabled[name]:
-                curFilter = self.filters[name]
-                if prevFilter is None:
-                    curFilter.SetInput(self.inputImage)
-                else:
-                    prevFilter.Update()
-                    curFilter.SetInput(prevFilter.GetOutput())
-                prevFilter = curFilter
-
-        if curFilter:
-            curFilter.Update()
-            return curFilter.GetOutput()
-        else:
-            return self.inputImage
-
-    def setWindowLevel(self, enabled, window, level):
-        '''Sets window/level params.
-
-        Args:
-            enabled: Bool dictating if window/level filter is enabled
-            window: Must be between 0 and 1
-            level: Must be between 0 and 1
-        '''
-        self.enabled[self.WINDOWLEVEL] = enabled
-        filter_ = self.filters[self.WINDOWLEVEL]
-
-        minValue = itk.NumericTraits[self.pixelType].min()
-        maxValue = itk.NumericTraits[self.pixelType].max()
-        valRange = maxValue - minValue
-
-        window = window*valRange + minValue
-        level = level*valRange + minValue
-
-        filter_.SetWindowLevel(
-                int(min(maxValue, max(minValue, window))),
-                int(min(maxValue, max(minValue, level))))
-        filter_.SetOutputMinimum(minValue)
-        filter_.SetOutputMaximum(maxValue)
-        # tell Update() that something has changed
-        filter_.Modified()
-
-    def setMedianParams(self, enabled, radius):
-        self.enabled[self.MEDIAN] = enabled
-        filter_ = self.filters[self.MEDIAN]
-        filter_.SetRadius(radius)
-
 class SegmentTubes(object):
     '''Holds logic to segment tubes from an image.'''
 
@@ -220,7 +128,6 @@ class SegmentTubes(object):
         self.tubeGroup = None
         self.segTubes = None
         self.scale = 2.0
-        self.filter = None
 
     def setImage(self, itkImage, pixelType, dimension):
         '''Sets the input image.
@@ -234,8 +141,6 @@ class SegmentTubes(object):
         self.pixelType = pixelType
         self.dimension = dimension
         self.imageType = itk.Image[pixelType, dimension]
-
-        self.filter = SegmentImageFilter(itkImage, self.imageType, pixelType)
 
     def extractTube(self, coords):
         '''Tries to extract a tube at coordinates.
@@ -252,7 +157,7 @@ class SegmentTubes(object):
         # create a new segment tubes every extraction so we get an updated
         # image to segment on.
         self.segTubes = itk.TubeTKITK.SegmentTubes[self.imageType].New()
-        self.segTubes.SetInputImage(self.filter.getOutput())
+        self.segTubes.SetInputImage(self.itkImage)
 
         self.tubeGroup = self.segTubes.GetTubeGroup()
 
@@ -298,10 +203,6 @@ class SegmentTubes(object):
             None if no tube group was found.
         '''
         return self.tubeGroup
-
-    def getFilter(self):
-        '''Getter for image filter.'''
-        return self.filter
 
 def DowncastToVesselTubeSOPoint(soPoint):
     '''Hacky way to downcast SpatialObjectPoint.'''

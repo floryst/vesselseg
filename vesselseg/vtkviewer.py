@@ -38,6 +38,10 @@ class SliceSlider(QWidget):
         self.sliceSlider.setValue(pos)
         self.setSliceLabel(pos)
 
+    def getPosition(self):
+        '''Gets current slice position.'''
+        return self.sliceSlider.value()
+
     def setRange(self, vmin, vmax):
         '''Sets range of slider.'''
         self.sliceSlider.setRange(vmin, vmax)
@@ -102,6 +106,7 @@ class VTKViewer(QWidget):
         self.slicePosition = 0
         self.tubeBlocks = None
         self.volume = None
+        self.sliceActor = None
 
         self.hbox = QHBoxLayout(self)
 
@@ -189,8 +194,6 @@ class VTKViewer(QWidget):
         if imageProp:
             # TODO handle case when user pressing "R/r" resets the window/level
             window, level = imageProp.GetColorWindow(), imageProp.GetColorLevel()
-            window = min(1.0, max(0.0, window/255.0))
-            level = min(1.0, max(0.0, level/255.0))
             self.windowLevelChanged.emit(window, level)
 
     def pickTubeBlock(self, blockIndex):
@@ -206,11 +209,11 @@ class VTKViewer(QWidget):
                     break
                 it.GoToNextItem()
 
-    def displayImage(self, vtkImageData):
+    def displayImage(self, vtkImageData, preserveState=False):
         '''Updates viewer with a new image.'''
         # show slice and volume
-        self.showSlice(vtkImageData)
-        self.showVolume(vtkImageData)
+        self.showSlice(vtkImageData, preserveState)
+        self.showVolume(vtkImageData, preserveState)
 
         # compute transformation
         self.image2worldTransform.Identity()
@@ -221,11 +224,20 @@ class VTKViewer(QWidget):
         # set z slice
         _, _, _, _, zmin, zmax = vtkImageData.GetExtent()
         slicePos = int((zmax+zmin)/2.0)
+
+        # restore original slice pos
+        if preserveState:
+            slicePos = self.sliceSlider.getPosition()
+
         self.sliceSlider.setRange(zmin, zmax)
         self.sliceSlider.setPosition(slicePos)
         self.updateSlice(slicePos)
 
-    def showSlice(self, vtkImageData):
+        # update scenes
+        self.sliceView.GetRenderWindow().Render()
+        self.volumeView.GetRenderWindow().Render()
+
+    def showSlice(self, vtkImageData, preserveState):
         '''Shows slice of image.'''
         self.producer.SetOutput(vtkImageData)
         self.reslice.SetInputConnection(self.producer.GetOutputPort())
@@ -252,17 +264,24 @@ class VTKViewer(QWidget):
         colors.SetLookupTable(table)
         colors.SetInputConnection(flip.GetOutputPort())
 
-        actor = vtk.vtkImageActor()
-        actor.GetMapper().SetInputConnection(colors.GetOutputPort())
+        # preserve image property
+        imageProperty = None
+        if preserveState and self.sliceActor:
+            imageProperty = self.sliceActor.GetProperty()
+
+        self.sliceActor = vtk.vtkImageActor()
+        self.sliceActor.GetMapper().SetInputConnection(colors.GetOutputPort())
+
+        # restore image property
+        if preserveState and imageProperty:
+            self.sliceActor.SetProperty(imageProperty)
 
         self.sliceRenderer.RemoveAllViewProps()
-        self.sliceRenderer.AddActor(actor)
+        self.sliceRenderer.AddActor(self.sliceActor)
 
         self.sliceRenderer.ResetCamera()
-        # Don't actually render slice, since setting the slice position will
-        # force render. If we render here, there will be a flicker of the slice.
 
-    def showVolume(self, vtkImageData):
+    def showVolume(self, vtkImageData, preserveState):
         '''Shows volume of image.'''
         producer = vtk.vtkTrivialProducer()
         producer.SetOutput(vtkImageData)
@@ -291,15 +310,19 @@ class VTKViewer(QWidget):
         prop.SetColor(color)
         prop.SetScalarOpacity(opacity)
 
+        # save tubes and property if preserving state
+        if preserveState and self.volume:
+            prop = self.volume.GetProperty()
+            self.volumeRenderer.RemoveViewProp(self.volume)
+        else:
+            self.volumeRenderer.RemoveAllViewProps()
+
         self.volume = vtk.vtkVolume()
         self.volume.SetMapper(mapper)
         self.volume.SetProperty(prop)
 
-        self.volumeRenderer.RemoveAllViewProps()
         self.volumeRenderer.AddViewProp(self.volume)
-
         self.volumeRenderer.ResetCamera()
-        self.volumeView.GetRenderWindow().Render()
 
     def showTubeBlocks(self, tubeBlocks):
         '''Shows tube blocks in scene.'''
