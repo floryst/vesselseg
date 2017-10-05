@@ -37,4 +37,8 @@ def itkToVtkImage(itkImage):
     do.PointData.append(arr, arrayname)
     do.PointData.SetActiveScalars(arrayname)
 
+    # copy over origin and spacing
+    vtkImage.SetOrigin(list(itkImage.GetOrigin()))
+    vtkImage.SetSpacing(list(itkImage.GetSpacing()))
+
     return vtkImage
