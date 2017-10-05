@@ -556,6 +556,7 @@ class FilterManager(QObject):
     def setImage(self, itkImage, pixelType, dimension):
         '''Sets input itk image.'''
         self.itkImage = itkImage
+        self.filteredImage = itkImage
         self.pixelType = pixelType
         self.dimension = dimension
 
