@@ -127,7 +127,10 @@ class VesselSegApp(QObject):
 
     def applyImageFilters(self):
         '''Updates filtered image'''
+        progress = self.viewManager.makeProgressDialog('Preprocessing...')
         self.filterManager.update()
+        progress.close()
+
         if self.viewManager.getViewedImageType() == IMAGE_PREPROCESSED:
             # trigger display image again
             self.changeViewedImage(IMAGE_PREPROCESSED)
