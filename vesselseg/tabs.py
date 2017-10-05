@@ -104,6 +104,12 @@ class FiltersTab(QWidget):
         self.medianCheckbox.setChecked(False)
         self.windowLevelCheckbox.setChecked(False)
 
+        # setChecked doesn't emit stateChanged, so must do this manually.
+        # NOTE: This emits regardless if state was already unchecked. This
+        # can be tied to FilterManager's state, but for now this is here.
+        self.windowLevelCheckbox.stateChanged.emit(False)
+        self.medianCheckbox.stateChanged.emit(False)
+
 class SegmentTab(QWidget):
     '''Segment tab holds parameter inputs for segmentation.'''
 
