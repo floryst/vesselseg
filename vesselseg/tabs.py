@@ -265,4 +265,7 @@ class ThreeDTab(QWidget):
         '''Sets scalar opacity range.'''
         self.opacitySlider.setMinimum(minv)
         self.opacitySlider.setMaximum(maxv)
-        self.opacitySlider.setValue(maxv/15)
+
+    def setScalarOpacity(self, value):
+        '''Sets scalar opacity unit distance.'''
+        self.opacitySlider.setValue(value)

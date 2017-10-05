@@ -122,7 +122,7 @@ class VesselSegApp(QObject):
             img = utils.itkToVtkImage(self.filterManager.getOutput())
         else:
             raise Exception('Invalid image type to view: %s' % imageType)
-        self.viewManager.displayImage(img, self.imageManager.filename)
+        self.viewManager.displayImage(img, self.imageManager.filename, True)
 
     def applyImageFilters(self):
         '''Updates filtered image'''

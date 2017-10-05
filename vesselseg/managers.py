@@ -353,9 +353,9 @@ class ViewManager(QObject):
         '''Sets the Ui enabled/disabled state.'''
         self.window.ui.setEnabled(state)
 
-    def displayImage(self, vtkImage, filename):
+    def displayImage(self, vtkImage, filename, preserveState=False):
         '''Displays a VTK ImageData to the UI.'''
-        self.window.vtkView().displayImage(vtkImage)
+        self.window.vtkView().displayImage(vtkImage, preserveState)
         self.window.infoTabView().showImageMetadata(vtkImage, filename)
 
         dims = vtkImage.GetDimensions()
@@ -365,7 +365,10 @@ class ViewManager(QObject):
                 (dims[0]*spacing[0])**2 +
                 (dims[1]*spacing[1])**2 +
                 (dims[2]*spacing[2])**2)
-        self.window.threeDTabView().setScalarOpacityRange(0, scalarOpacityMax)
+        self.window.threeDTabView().setScalarOpacityRange(
+                0, scalarOpacityMax)
+        if not preserveState:
+            self.window.threeDTabView().setScalarOpacity(scalarOpacityMax/15)
 
     def displayTubes(self, tubeGroup):
         '''Display tubes in UI.'''
@@ -607,6 +610,10 @@ class FilterManager(QObject):
         '''Sets window/level params.'''
         self.window = window
         self.level = level
+        # assume window/level are supposed to be an unsigned char
+        # look at the vtkImageMapper source code
+        window = min(1.0, max(0.0, window/255.0))
+        level = min(1.0, max(0.0, level/255.0))
 
         filter_ = self.filters[self.WINDOWLEVEL]
 
