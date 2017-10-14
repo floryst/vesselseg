@@ -18,6 +18,7 @@ A few prerequisites:
   - On Windows, build PyQt5 using the Qt5.7.1 installation from above
   - Follow the directions at http://pyqt.sourceforge.net/Docs/PyQt5/installation.html
   - The installation of sip is as mentioned in those directions (no modifications)
+  - Before configuring PyQt5, rename Qt5/include/QtNfc, see https://riverbankcomputing.com/pipermail/pyqt/2015-August/036222.html
   - When configuring PyQt5, give the argument --qmake `C:\Qt\Qt5.7.1\5.7\msvc2013_64\bin\qmake.exe`
 - [VTK](https://github.com/kitware/vtk)
   - `CMAKE_BUILD_TYPE` should be Release
