@@ -37,5 +37,7 @@ A few prerequisites:
   - `CMAKE_BUILD_TYPE` should be Release
   - Should be built using the ITK build from above (cmake variable `USE_SYSTEM_ITK:BOOL=ON`, then define `ITK_DIR`)
   - Should be built using the VTK build from above (cmake variable `USE_SYSTEM_VTK:BOOL=ON`, then define `VTK_DIR`)
+- numpy
+  - pip install numpy
 - Set your PATH to include QT's bin directory (for Qt shared library access).
   - Could also set qt.conf file for python, per http://doc.qt.io/qt-5/qt-conf.html
